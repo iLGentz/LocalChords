@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tema "studio": antracite caldo, superfici leggermente elevate, accento ambra. */
+@theme {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, monospace;
+
+  --color-ground: #1c1a18;
+  --color-surface: #24221f;
+  --color-raised: #2d2a26;
+  --color-line: #3a3631;
+  --color-ink: #ece7e0;
+  --color-ink-muted: #a8a097;
+  --color-accent: #f0a73a;
+  --color-ok: #6cc08b;
+  --color-warn: #e6b44c;
+  --color-bad: #e8776b;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

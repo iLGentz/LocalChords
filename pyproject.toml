@@ -1,0 +1,65 @@
+[project]
+name = "localchords"
+version = "0.1.0"
+description = "App desktop local-first per Windows: accordi, testi sincronizzati, tab e stem da un file audio."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi>=0.165",
+    "uvicorn>=0.54",
+    "pydantic>=2.14",
+    "pydantic-settings>=2.16",
+    "sqlalchemy>=2.1",
+    "alembic>=1.20",
+    "pywebview>=6.2",
+]
+
+[project.scripts]
+localchords = "app.desktop:main"
+localchords-api = "app.api.server:main"
+localchords-worker = "app.worker.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2",
+    "httpx2>=2.16",
+    "mypy>=2.4",
+    "ruff>=0.17",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.uv]
+# Python solo dalla cartella dell'app (vedi setup.ps1), mai quello di sistema.
+python-preference = "only-managed"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = [
+    "error::pytest.PytestUnhandledThreadExceptionWarning",
+    "error::sqlalchemy.exc.SADeprecationWarning",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["app"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["webview", "webview.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["app/db/migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N"]
