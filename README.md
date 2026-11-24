@@ -4,14 +4,15 @@ App desktop **per Windows 10/11 (x64)**, local-first, che trasforma un file audi
 testi sincronizzati, tab, diagrammi e 6 stem con mixer e strumenti di pratica.
 Tutto gira sul tuo PC: nessun account, nessun servizio cloud obbligatorio.
 
-> **Stato:** fase 5 di 10. Scheletro, importazione da file locale (e da YouTube, se
+> **Stato:** fase 6 di 10. Scheletro, importazione da file locale (e da YouTube, se
 > attivato), analisi (beat grid, BPM, tonalità, accordi, sezioni, waveform), separazione in
 > 6 stem, rilevamento dell'hardware con profili, gestione dello spazio su disco e testi
-> sincronizzati parola per parola con editor. Il player completo arriva nella fase 6 (vedi `PIANO.md`).
+> sincronizzati parola per parola con editor, player con mixer degli stem, velocità, tonalità,
+> loop e metronomo. Trasposizione degli accordi e diagrammi arrivano nella fase 7 (vedi `PIANO.md`).
 >
 > I test automatici sono rimandati: verranno scritti ed eseguiti sul PC di test con GPU
-> NVIDIA. Il codice delle fasi 2-5 è stato controllato solo staticamente (mypy, ruff, tsc):
-> nessun brano è ancora stato importato, analizzato, separato o trascritto.
+> NVIDIA. Il codice delle fasi 2-6 è stato controllato solo staticamente (mypy, ruff, tsc):
+> nessun brano è ancora stato importato, analizzato, separato, trascritto o riprodotto.
 
 ## Prerequisiti
 
@@ -131,6 +132,31 @@ Nella scheda del brano:
   sopravvive al riavvio. Ogni modifica si salva subito.
 - **Incolla il testo** (anche in formato LRC) per sostituire quello trovato, poi allineamento.
 - Brani strumentali e voce assente vengono segnalati.
+
+## Player e pratica
+
+- **Mixer**: volume, mute e solo per ciascuno dei 6 stem (o per il mix completo se il brano
+  non è separato), misuratori di livello e spia di clipping per traccia e sul master.
+  Pulsanti rapidi "Solo voce", "Solo base", "Tutti".
+- **Velocità** da 0,5× a 1,5× senza cambiare l'altezza e **tonalità** da -11 a +11 semitoni,
+  indipendenti (SoundTouch in AudioWorklet).
+- **Loop A/B**: trascina sulla waveform, oppure pulsanti A e B alla posizione attuale; con
+  "snap" i punti si agganciano al beat più vicino. Maiusc+clic su un accordo ripete la sua
+  battuta; "↻ ripeti" o Maiusc+clic sulla banda della waveform ripete una sezione.
+- **Metronomo** sui beat dell'analisi, con volume e accento sul primo battito; **count-in**
+  di 1, 2 o 4 battute prima di partire.
+- Il testo scorre da solo seguendo la riproduzione.
+
+| Tasto | Azione |
+|---|---|
+| Spazio | play / pausa |
+| ← / → | indietro / avanti di 5 s (con Maiusc: una battuta) |
+| 1-6 | seleziona una traccia del mixer |
+| M / S | mute / solo della traccia selezionata |
+| L | attiva o disattiva il loop (se non c'è, ripete la battuta corrente) |
+| Ctrl+Z / Ctrl+Y | annulla / ripristina le modifiche al testo |
+
+Memoria: i 6 stem decodificati occupano circa 500 MB per un brano di 4 minuti (44,1 kHz).
 
 ## Spazio su disco
 

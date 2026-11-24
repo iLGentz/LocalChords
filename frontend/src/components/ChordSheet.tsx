@@ -43,10 +43,12 @@ interface ChordSheetProps {
   analysis: Analysis;
   time: number;
   onSeek: (time: number) => void;
+  /** Ripete un intervallo (battuta con Maiusc+clic, oppure sezione). */
+  onLoop: (start: number, end: number) => void;
 }
 
 /** Accordi per battuta, con le sezioni e l'evidenziazione della posizione corrente. */
-export function ChordSheet({ analysis, time, onSeek }: ChordSheetProps) {
+export function ChordSheet({ analysis, time, onSeek, onLoop }: ChordSheetProps) {
   const bars = useMemo(() => buildBars(analysis), [analysis]);
   const visible = (c: ChordEvent): boolean => c.chord !== "N";
 
@@ -74,6 +76,14 @@ export function ChordSheet({ analysis, time, onSeek }: ChordSheetProps) {
                 <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
                   {bar.section.name}
                 </span>
+                <button
+                  type="button"
+                  className="rounded px-1.5 text-xs text-ink-muted hover:bg-raised hover:text-ink"
+                  onClick={() => bar.section && onLoop(bar.section.start_s, bar.section.end_s)}
+                  title="Ripeti questa sezione"
+                >
+                  ↻ ripeti
+                </button>
               </div>
             )}
             <div
@@ -85,7 +95,7 @@ export function ChordSheet({ analysis, time, onSeek }: ChordSheetProps) {
               {bar.carried && visible(bar.carried) && (
                 <button
                   type="button"
-                  onClick={() => onSeek(bar.start)}
+                  onClick={(e) => (e.shiftKey ? onLoop(bar.start, bar.end) : onSeek(bar.start))}
                   className="truncate font-mono text-sm text-ink-muted/60 hover:text-ink-muted"
                   title={`Prosegue: ${bar.carried.chord}`}
                 >
@@ -98,6 +108,7 @@ export function ChordSheet({ analysis, time, onSeek }: ChordSheetProps) {
                   chord={c}
                   active={time >= c.start_s && time < c.end_s}
                   onSeek={onSeek}
+                  onLoopBar={() => onLoop(bar.start, bar.end)}
                 />
               ))}
             </div>
@@ -112,16 +123,18 @@ function ChordChip({
   chord,
   active,
   onSeek,
+  onLoopBar,
 }: {
   chord: ChordEvent;
   active: boolean;
   onSeek: (t: number) => void;
+  onLoopBar?: () => void;
 }) {
   const lowConfidence = chord.confidence !== null && chord.confidence < 0.4;
   return (
     <button
       type="button"
-      onClick={() => onSeek(chord.start_s)}
+      onClick={(e) => (e.shiftKey && onLoopBar ? onLoopBar() : onSeek(chord.start_s))}
       aria-current={active ? "true" : undefined}
       title={
         lowConfidence

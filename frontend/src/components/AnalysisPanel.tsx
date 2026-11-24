@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from "react";
 
+import type { LoopState } from "@/audio/engine";
 import { ChordSheet } from "@/components/ChordSheet";
 import { Button, Notice } from "@/components/ui";
-import { Waveform } from "@/components/Waveform";
-import { useAnalysis } from "@/hooks/useAnalysis";
-import type { Song } from "@/lib/api";
+import { WaveformCanvas } from "@/components/WaveformCanvas";
+import type { AnalysisState } from "@/hooks/useAnalysis";
 
 function confidenceLabel(value: number | null): { text: string; tone: string } {
   if (value === null) return { text: "—", tone: "text-ink-muted" };
@@ -14,55 +14,58 @@ function confidenceLabel(value: number | null): { text: string; tone: string } {
 }
 
 interface AnalysisPanelProps {
-  song: Song;
+  state: AnalysisState;
+  duration: number;
+  time: number;
+  loop: LoopState | null;
+  snap: boolean;
+  onSeek: (t: number) => void;
+  onLoop: (loop: LoopState) => void;
   onReanalyze: () => void;
   busy: boolean;
-  media: HTMLAudioElement | null;
-  onMediaRef: (el: HTMLAudioElement | null) => void;
-  time: number;
-  onSeek: (t: number) => void;
-  /** Contenuto mostrato sotto gli accordi (es. i testi), che condivide la riproduzione. */
+  /** Contenuto tra waveform e accordi (es. il mixer). */
+  afterWaveform?: ReactNode;
+  /** Contenuto sotto gli accordi (es. i testi). */
   children?: ReactNode;
 }
 
 export function AnalysisPanel(props: AnalysisPanelProps) {
-  const { song, onReanalyze, busy, media, onMediaRef: setMedia, time, onSeek: seek, children } = props;
-  const state = useAnalysis(song.id, song.updated_at);
+  const { state, duration, time, loop, snap, onSeek, onLoop, onReanalyze, busy, afterWaveform, children } = props;
   const [confirmReanalyze, setConfirmReanalyze] = useState(false);
+  const analysis = state.kind === "ready" ? state.analysis : null;
 
   return (
     <div className="flex flex-col gap-5">
-      {state.kind === "ready" && state.analysis.analyzed && (
+      {analysis?.analyzed && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Fact
-            label="Tonalità"
-            value={state.analysis.key ?? "—"}
-            confidence={state.analysis.key_confidence}
-          />
-          <Fact
-            label="BPM"
-            value={state.analysis.bpm ? state.analysis.bpm.toFixed(0) : "—"}
-            confidence={state.analysis.bpm_confidence}
-          />
+          <Fact label="Tonalità" value={analysis.key ?? "—"} confidence={analysis.key_confidence} />
+          <Fact label="BPM" value={analysis.bpm ? analysis.bpm.toFixed(0) : "—"} confidence={analysis.bpm_confidence} />
           <Fact
             label="Battute"
-            value={String(state.analysis.beats.filter((b) => b.is_downbeat).length)}
+            value={String(analysis.beats.filter((b) => b.is_downbeat).length)}
             confidence={null}
-            note={`${state.analysis.beats_per_bar}/4 (presunto)`}
+            note={`${analysis.beats_per_bar}/4 (presunto)`}
           />
         </div>
       )}
 
-      <section aria-label="Ascolto" className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-4">
-        {state.kind === "ready" && state.waveform && media && (
-          <Waveform media={media} peaks={state.waveform} sections={state.analysis.sections} />
-        )}
-        {song.audio_url && (
-          <audio ref={setMedia} controls preload="metadata" src={song.audio_url} className="w-full">
-            Il tuo sistema non riesce a riprodurre questo audio.
-          </audio>
-        )}
-      </section>
+      {state.kind === "ready" && state.waveform && duration > 0 && (
+        <section aria-label="Waveform" className="rounded-lg border border-line bg-surface p-3">
+          <WaveformCanvas
+            peaks={state.waveform}
+            duration={duration}
+            sections={state.analysis.sections}
+            beats={state.analysis.beats.map((b) => b.time_s)}
+            time={time}
+            loop={loop}
+            snap={snap}
+            onSeek={onSeek}
+            onLoop={onLoop}
+          />
+        </section>
+      )}
+
+      {afterWaveform}
 
       {state.kind === "loading" && (
         <div aria-hidden="true" className="flex flex-col gap-2">
@@ -73,19 +76,19 @@ export function AnalysisPanel(props: AnalysisPanelProps) {
       )}
       {state.kind === "error" && <Notice tone="error">{state.error.message}</Notice>}
 
-      {state.kind === "ready" && state.analysis.analyzed && (
+      {analysis?.analyzed && (
         <section aria-labelledby="chords-title" className="rounded-lg border border-line bg-surface p-4">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="chords-title" className="text-base font-semibold">
               Accordi
             </h2>
             <p className="text-xs text-ink-muted">
-              Rilevati automaticamente: possono contenere errori. Sottolineati = incerti. Clic su
-              un accordo per ascoltarlo.
+              Rilevati automaticamente: possono contenere errori. Sottolineati = incerti. Clic: ascolta da
+              lì · Maiusc+clic: ripeti la battuta.
             </p>
           </div>
-          {state.analysis.chords.length > 0 ? (
-            <ChordSheet analysis={state.analysis} time={time} onSeek={seek} />
+          {analysis.chords.length > 0 ? (
+            <ChordSheet analysis={analysis} time={time} onSeek={onSeek} onLoop={(a, b) => onLoop({ a, b, enabled: true })} />
           ) : (
             <p className="text-sm text-ink-muted">Nessun accordo rilevato.</p>
           )}

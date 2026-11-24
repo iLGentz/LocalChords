@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -21,6 +22,18 @@ from app.storage.files import Storage
 from app.worker.queue import JobQueue
 
 log = logging.getLogger(__name__)
+
+# Su Windows i tipi MIME vengono dal registro e a volte `.js` risulta `text/plain`: il
+# browser rifiuterebbe i moduli JavaScript (interfaccia e AudioWorklet). Li fissiamo.
+for _ext, _type in (
+    (".js", "text/javascript"),
+    (".mjs", "text/javascript"),
+    (".css", "text/css"),
+    (".json", "application/json"),
+    (".svg", "image/svg+xml"),
+    (".wasm", "application/wasm"),
+):
+    mimetypes.add_type(_type, _ext)
 
 _MISSING_FRONTEND = """<!doctype html><html lang="it"><head><meta charset="utf-8">
 <title>LocalChords</title></head>

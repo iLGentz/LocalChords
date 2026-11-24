@@ -10,6 +10,57 @@ fase 1 è stato verificato con quei test prima della rimozione; dalla fase 2 in 
 controlli sono solo statici (mypy strict, ruff, `tsc`, build) finché non si riprendono.
 La configurazione di pytest in `pyproject.toml` resta pronta.
 
+## Fase 6 — player (24/11/2026)
+
+### Motore Web Audio
+`frontend/src/audio/engine.ts`. Grafo: una `AudioBufferSourceNode` per stem → gain →
+analyser → somma → SoundTouch → master → analyser → uscita. Il metronomo va direttamente
+all'uscita, così non viene trasposto.
+- **Tutti gli stem in memoria** (decodificati a 44,1 kHz, ~500 MB per 4 minuti): le sorgenti
+  partono con lo stesso `start(when, offset)` e restano allineate a campione. Lo streaming
+  progressivo citato tra i rischi del piano non è implementato; da valutare se la RAM risulta
+  un problema sui PC "normali".
+- Senza stem il player usa il mix completo, con lo stesso motore.
+
+### Velocità e tonalità: @soundtouchjs/audio-worklet
+Pacchetto **MPL-2.0** (non LGPL come il vecchio `soundtouchjs`), usato senza modifiche: il
+processore è emesso da Vite come file separato. Come raccomanda la libreria, la velocità si
+applica con il `playbackRate` delle sorgenti e SoundTouch compensa l'altezza (gli si comunica
+lo stesso rate), poi applica i semitoni. Così il time-stretching non va in sottoalimentazione
+alle velocità alte. Se l'AudioWorklet non si registra, il player funziona lo stesso ma
+velocità e altezza cambiano insieme e la trasposizione è disattivata (segnalato nell'interfaccia).
+
+### Loop e posizione
+Loop A/B con `loop/loopStart/loopEnd` nativi delle sorgenti: preciso al campione e uguale
+per tutti gli stem. La posizione di ascolto si calcola da `AudioContext.currentTime`
+(ancora + tempo trascorso × velocità, ripiegato dentro il loop). Cambiare velocità
+riancora il tempo senza riavviare le sorgenti; spostarsi o cambiare il loop le riavvia.
+
+### Metronomo e count-in
+Scheduler con lookahead (ogni 25 ms programma i click dei 150 ms successivi) sui beat
+dell'analisi, convertiti nel tempo del contesto tenendo conto di velocità e loop. Click
+sintetizzati (oscillatore 1600 Hz sul primo battito, 1000 Hz sugli alti). Il count-in usa il
+BPM dell'analisi e ritarda l'avvio delle sorgenti.
+
+### Waveform su canvas invece di Wavesurfer
+Wavesurfer segue un elemento `<audio>` o un suo player interno; con 6 sorgenti Web Audio
+sincronizzate e SoundTouch non c'è un elemento da seguire, e simularne uno sarebbe fragile.
+La waveform è disegnata su canvas dai picchi precalcolati (stesso file della fase 3), con
+sezioni, loop e cursore; la dipendenza `wavesurfer.js` è stata rimossa.
+
+### Clipping
+Picco ≥ 0,999 sul master o su una traccia → spia rossa per 1,5 s. I volumi delle tracce
+arrivano al 150%: la somma di più stem può superare 0 dBFS.
+
+### Scorciatoie
+Ignorate mentre si scrive in un campo; lo spazio su un pulsante attiva il pulsante.
+M e S agiscono sulla traccia selezionata (clic sul nome o tasti 1-6).
+
+### Tipi MIME
+Su Windows `mimetypes` legge il registro, e su alcuni sistemi `.js` risulta `text/plain`: il
+browser rifiuterebbe i moduli (interfaccia e worklet). `app/api/main.py` fissa i tipi di
+`.js`, `.mjs`, `.css`, `.json`, `.svg`, `.wasm`.
+
 ## Fase 5 — testi (24/11/2026)
 
 ### faster-whisper invece di WhisperX

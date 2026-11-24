@@ -1,9 +1,6 @@
 import { useState, type FormEvent } from "react";
 
-import { AnalysisPanel } from "@/components/AnalysisPanel";
-import { LyricsPanel } from "@/components/LyricsPanel";
-import { StemsPanel } from "@/components/StemsPanel";
-import { useMediaTime } from "@/hooks/useMediaTime";
+import { SongWorkspace } from "@/components/SongWorkspace";
 import { Button, Notice, ProgressBar, TextField } from "@/components/ui";
 import { api, asApiError, isJobActive, type ApiError, type Job, type Song } from "@/lib/api";
 import { formatDuration, formatEta, JOB_STATUS_LABEL, SONG_STATUS_LABEL } from "@/lib/format";
@@ -19,13 +16,6 @@ export function SongView({ song, onChanged, onDeleted }: SongViewProps) {
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [media, setMedia] = useState<HTMLAudioElement | null>(null);
-  const time = useMediaTime(media);
-  const seek = (t: number): void => {
-    if (!media) return;
-    media.currentTime = t;
-    if (media.paused) void media.play().catch(() => undefined);
-  };
   const job = song.job;
   // Il job dei testi ha il suo pannello: qui l'avanzamento degli altri job.
   const active = isJobActive(job) && job?.kind !== "lyrics";
@@ -136,20 +126,13 @@ export function SongView({ song, onChanged, onDeleted }: SongViewProps) {
       )}
 
       {song.status === "ready" && (
-        <AnalysisPanel
+        <SongWorkspace
           song={song}
           busy={busy}
-          media={media}
-          onMediaRef={setMedia}
-          time={time}
-          onSeek={seek}
+          onChanged={onChanged}
           onReanalyze={() => void run(() => api("POST", `/songs/${song.id}/analyze`), onChanged)}
-        >
-          <LyricsPanel song={song} time={time} onSeek={seek} />
-        </AnalysisPanel>
+        />
       )}
-
-      {song.status === "ready" && <StemsPanel song={song} onChanged={onChanged} />}
     </article>
   );
 }

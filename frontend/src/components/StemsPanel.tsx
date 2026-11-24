@@ -13,7 +13,7 @@ import {
 } from "@/lib/api";
 import { formatBytes, formatEta } from "@/lib/format";
 
-const STEM_LABEL: Record<StemInfo["type"], string> = {
+export const STEM_LABEL: Record<StemInfo["type"], string> = {
   vocals: "Voce",
   drums: "Batteria",
   bass: "Basso",
@@ -24,29 +24,19 @@ const STEM_LABEL: Record<StemInfo["type"], string> = {
 
 interface StemsPanelProps {
   song: Song;
+  stems: StemInfo[] | null;
   onChanged: () => void;
 }
 
-export function StemsPanel({ song, onChanged }: StemsPanelProps) {
-  const [stems, setStems] = useState<StemInfo[] | null>(null);
+/** Separazione in stem (avvio, modello, dispositivo) ed eliminazione. L'ascolto è nel mixer. */
+export function StemsPanel({ song, stems, onChanged }: StemsPanelProps) {
   const [error, setError] = useState<ApiError | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    apiGet<StemInfo[]>(`/songs/${song.id}/stems`, controller.signal)
-      .then(setStems)
-      .catch((e: unknown) => {
-        if (!controller.signal.aborted) setError(asApiError(e));
-      });
-    return () => controller.abort();
-  }, [song.id, song.updated_at]);
 
   const removeStems = async (): Promise<void> => {
     try {
       await api("DELETE", `/songs/${song.id}/stems`);
       setConfirmDelete(false);
-      setStems([]);
       onChanged();
     } catch (e) {
       setError(asApiError(e));
@@ -65,42 +55,27 @@ export function StemsPanel({ song, onChanged }: StemsPanelProps) {
       {stems === null && <div className="h-16 animate-pulse rounded-md bg-raised" aria-hidden="true" />}
       {stems !== null && stems.length === 0 && <SeparateForm song={song} onStarted={onChanged} />}
       {stems !== null && stems.length > 0 && (
-        <>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {stems.map((s) => (
-              <li key={s.type} className="flex flex-col gap-1 rounded-md border border-line p-2">
-                <span className="flex justify-between text-xs">
-                  <span className="font-medium text-ink">{STEM_LABEL[s.type]}</span>
-                  <span className="text-ink-muted">{s.size_bytes ? formatBytes(s.size_bytes) : ""}</span>
-                </span>
-                <audio controls preload="none" src={s.url} className="h-8 w-full">
-                  Riproduzione non supportata.
-                </audio>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-3 flex items-center justify-between gap-2 text-xs text-ink-muted">
-            <span>
-              Modello: {stems[0]?.model ?? "—"} · totale{" "}
-              {formatBytes(stems.reduce((sum, s) => sum + (s.size_bytes ?? 0), 0))}. Mixer con mute e solo
-              nel player (prossima fase).
-            </span>
-            {confirmDelete ? (
-              <span className="flex gap-2">
-                <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
-                  Annulla
-                </Button>
-                <Button variant="danger" onClick={() => void removeStems()}>
-                  Elimina stem
-                </Button>
-              </span>
-            ) : (
-              <Button variant="ghost" onClick={() => setConfirmDelete(true)}>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
+          <span>
+            {stems.length} stem ({stems.map((s) => STEM_LABEL[s.type]).join(", ")}) · modello{" "}
+            {stems[0]?.model ?? "—"} · {formatBytes(stems.reduce((sum, s) => sum + (s.size_bytes ?? 0), 0))}.
+            Regolali dal mixer.
+          </span>
+          {confirmDelete ? (
+            <span className="flex gap-2">
+              <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+                Annulla
+              </Button>
+              <Button variant="danger" onClick={() => void removeStems()}>
                 Elimina stem
               </Button>
-            )}
-          </div>
-        </>
+            </span>
+          ) : (
+            <Button variant="ghost" onClick={() => setConfirmDelete(true)}>
+              Elimina stem
+            </Button>
+          )}
+        </div>
       )}
     </section>
   );
