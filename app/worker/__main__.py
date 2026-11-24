@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
 
     db = Database(settings.database_path)
     wait_for_schema(db)
-    worker = JobWorker(settings, db, default_registry())
+    worker = JobWorker(settings, db, default_registry(settings, db))
 
     def _stop(_signum: int, _frame: FrameType | None) -> None:
         worker.stop_event.set()

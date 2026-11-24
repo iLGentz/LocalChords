@@ -14,6 +14,11 @@ dependencies = [
     "pywebview>=6.2",
 ]
 
+[project.optional-dependencies]
+# Adapter YouTube, disattivato di default (setup.ps1 -YouTube). L'extra "deno" installa il
+# runtime JavaScript che yt-dlp richiede per YouTube.
+youtube = ["yt-dlp[default,deno]>=2026.11.23"]
+
 [project.scripts]
 localchords = "app.desktop:main"
 localchords-api = "app.api.server:main"
@@ -53,7 +58,7 @@ packages = ["app"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["webview", "webview.*"]
+module = ["webview", "webview.*", "yt_dlp", "yt_dlp.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

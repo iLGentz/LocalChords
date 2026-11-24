@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from app.config import Settings
 from app.db.models import JobStatus
+from app.db.session import Database
 from app.worker.context import JobContext
 
 HandlerFn = Callable[[JobContext], None]
@@ -36,7 +38,10 @@ class HandlerRegistry:
         return {k: h.initial_status for k, h in self._handlers.items()}
 
 
-def default_registry() -> HandlerRegistry:
-    """Gestori dell'app. Le fasi successive (import, analisi, separazione, testi) si
-    registrano qui."""
-    return HandlerRegistry()
+def default_registry(settings: Settings, db: Database) -> HandlerRegistry:
+    """Gestori dell'app. Le fasi successive (analisi, separazione, testi) si registrano qui."""
+    from app.importing import jobs as import_jobs
+
+    registry = HandlerRegistry()
+    import_jobs.register(registry, settings, db)
+    return registry

@@ -43,6 +43,7 @@ class SongStatus(StrEnum):
     PROCESSING = "processing"
     READY = "ready"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class JobStatus(StrEnum):

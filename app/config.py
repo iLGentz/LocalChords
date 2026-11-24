@@ -91,6 +91,16 @@ class Settings(BaseSettings):
         found = shutil.which("ffmpeg")
         return Path(found) if found else None
 
+    def resolve_ffprobe(self) -> Path | None:
+        """ffprobe accanto a ffmpeg, altrimenti dal PATH."""
+        ffmpeg = self.resolve_ffmpeg()
+        if ffmpeg is not None:
+            sibling = ffmpeg.with_name("ffprobe" + ffmpeg.suffix)
+            if sibling.is_file():
+                return sibling
+        found = shutil.which("ffprobe")
+        return Path(found) if found else None
+
     def ensure_dirs(self) -> None:
         for sub in ("audio", "stems", "waveforms", "cache", "models", "exports"):
             (self.data_dir / sub).mkdir(parents=True, exist_ok=True)

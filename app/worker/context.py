@@ -8,6 +8,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from app.db.models import JobStatus
+from app.errors import AppError
 from app.worker.queue import ClaimedJob, JobQueue
 
 T = TypeVar("T")
@@ -16,13 +17,8 @@ PROGRESS_MIN_INTERVAL_S = 0.25
 CANCEL_CHECK_INTERVAL_S = 0.5
 
 
-class JobError(Exception):
-    """Errore previsto, con codice e messaggio comprensibile per l'utente."""
-
-    def __init__(self, code: str, message: str) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
+class JobError(AppError):
+    """Errore previsto di un job, con codice e messaggio comprensibile per l'utente."""
 
 
 class JobCancelled(Exception):  # noqa: N818 - è un segnale, non un errore
@@ -84,12 +80,16 @@ class JobContext:
         self._last_report = now
         self._queue.report(self.job_id, progress=fraction, message=message, eta_s=eta_s)
 
-    def check(self) -> None:
-        """Da chiamare spesso nei cicli lunghi: interrompe se annullato o in chiusura."""
+    def check(self, *, force: bool = False) -> None:
+        """Da chiamare spesso nei cicli lunghi: interrompe se annullato o in chiusura.
+
+        La lettura del flag di annullamento dal DB è limitata nel tempo; ``force`` la esegue
+        subito (utile dopo un errore di una libreria che potrebbe aver nascosto
+        l'annullamento)."""
         if self._stop.is_set():
             raise JobInterrupted
         now = time.monotonic()
-        if now - self._last_cancel_check >= CANCEL_CHECK_INTERVAL_S:
+        if force or now - self._last_cancel_check >= CANCEL_CHECK_INTERVAL_S:
             self._last_cancel_check = now
             if self._queue.is_cancel_requested(self.job_id):
                 raise JobCancelled

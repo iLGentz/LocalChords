@@ -4,9 +4,12 @@ App desktop **per Windows 10/11 (x64)**, local-first, che trasforma un file audi
 testi sincronizzati, tab, diagrammi e 6 stem con mixer e strumenti di pratica.
 Tutto gira sul tuo PC: nessun account, nessun servizio cloud obbligatorio.
 
-> **Stato:** fase 1 di 10 (scheletro). Database, coda dei job, worker, API di sistema e
-> finestra desktop funzionano; import, analisi, separazione e player arrivano nelle fasi
-> successive (vedi `PIANO.md`).
+> **Stato:** fase 2 di 10. Scheletro (database, coda dei job, worker, finestra desktop) e
+> importazione dei brani da file locale (e da YouTube, se attivato). Analisi, separazione,
+> testi e player arrivano nelle fasi successive (vedi `PIANO.md`).
+>
+> I test automatici sono rimandati: verranno scritti ed eseguiti sul PC di test con GPU
+> NVIDIA. Il codice della fase 2 è stato controllato solo staticamente (mypy, ruff, tsc).
 
 ## Prerequisiti
 
@@ -37,6 +40,7 @@ Opzioni utili:
 | `-SkipFfmpeg` | non scarica FFmpeg (se lo hai già nel PATH o lo installerai dopo) |
 | `-SkipFrontend` | non ricompila l'interfaccia |
 | `-Dev` | installa anche gli strumenti di sviluppo (pytest, mypy, ruff) |
+| `-YouTube` | installa e attiva l'adapter YouTube (yt-dlp più Deno, il runtime JavaScript che yt-dlp richiede) |
 
 Lo script è idempotente: puoi rieseguirlo per aggiornare. FFmpeg viene scaricato da
 gyan.dev ("release essentials") e verificato con lo SHA-256 pubblicato.
@@ -50,6 +54,29 @@ Dati e log stanno in:
 
 - `data\` — database SQLite, audio, stem, waveform, cache, modelli scaricati;
 - `logs\` — log JSON (`app.log` per finestra e API, `worker.log` per le elaborazioni).
+
+## Importare un brano
+
+1. Trascina un file audio nella finestra (o usa **Scegli un file**). Formati: MP3, WAV, M4A,
+   FLAC, OGG; dimensione massima predefinita 500 MB (`LOCALCHORDS_MAX_UPLOAD_MB`).
+2. L'app verifica il file e mostra un'anteprima: titolo, artista e album (dai tag o dal nome
+   del file, nella forma "Artista - Titolo"), formato, durata, frequenza. Puoi correggerli.
+3. **Importa** avvia l'elaborazione in background: verifica, conversione in FLAC 44,1 kHz
+   stereo, controllo che l'audio non sia silenzioso. Puoi annullarla in qualsiasi momento.
+
+Se lo stesso file (stesso SHA-256) è già nel catalogo, l'app lo segnala e propone di aprire
+il brano esistente invece di rianalizzarlo.
+
+Errori specifici: formato non supportato, file troppo grande, file vuoto o danneggiato,
+nessuna traccia audio, brano troppo corto (< 3 s) o troppo lungo (> 60 min), audio
+silenzioso, FFmpeg mancante. Un'importazione fallita o annullata si può riprovare.
+
+### Da YouTube (facoltativo, disattivato di default)
+
+`setup.ps1 -YouTube` installa yt-dlp e lo attiva (`LOCALCHORDS_YOUTUBE_ENABLED=true`). Nella
+schermata di import compare il campo per il link: anteprima, conferma, download e poi la
+stessa elaborazione dei file locali. Non usa account né cookie: video privati, con limiti
+d'età o bloccati nel tuo paese danno un errore esplicito. Le dirette non sono supportate.
 
 ## Configurazione
 
@@ -94,6 +121,10 @@ L'app applica le migrazioni da sola all'avvio.
 app\api\        FastAPI: router, schemi, errori strutturati {code, message, detail}
 app\worker\     coda persistente su SQLite e processo worker (checkpoint per fase)
 app\db\         modelli SQLAlchemy, sessioni, migrazioni Alembic
+app\importing\  upload con anteprima, catalogo, job di importazione, validazione
+app\media\      wrapper di ffprobe e ffmpeg
+app\storage\    struttura della cartella data\
+app\adapters\   adapter YouTube (yt-dlp), facoltativo
 app\desktop.py  avvio: migrazioni, API in un thread, worker in un processo, finestra pywebview
 frontend\       Vite + React + TypeScript + Tailwind, compilato in statico e servito da FastAPI
 ```
@@ -109,7 +140,7 @@ frontend\       Vite + React + TypeScript + Tailwind, compilato in statico e ser
 - L'annullamento di un job in coda è immediato; per uno in esecuzione il worker si ferma
   al primo controllo utile.
 
-### API disponibili (fase 1)
+### API disponibili
 
 | Metodo | Percorso | Descrizione |
 |---|---|---|
@@ -117,6 +148,17 @@ frontend\       Vite + React + TypeScript + Tailwind, compilato in statico e ser
 | GET | `/api/jobs` | elenco dei job (filtro `?status=`) |
 | GET | `/api/jobs/{id}` | stato, fase, progresso, tempo stimato, errore |
 | POST | `/api/jobs/{id}/cancel` | annulla un job |
+| GET | `/api/songs?q=` | catalogo, con ricerca su titolo, artista e album |
+| POST | `/api/songs/upload` | corpo = byte del file, header `X-Filename`: verifica e anteprima |
+| POST | `/api/songs/upload/{upload_id}/confirm` | crea il brano e accoda l'importazione |
+| DELETE | `/api/songs/upload/{upload_id}` | scarta un'anteprima |
+| POST | `/api/songs/import-url/preview` | anteprima di un video YouTube |
+| POST | `/api/songs/import-url` | crea il brano da YouTube e accoda il download |
+| GET / PATCH / DELETE | `/api/songs/{id}` | dettaglio, modifica di titolo/artista/album, eliminazione |
+| POST | `/api/songs/{id}/retry` | riprova un'importazione fallita o annullata |
+| GET | `/api/songs/{id}/audio` | audio normalizzato (FLAC), con supporto ai range |
+
+Le anteprime di upload non confermate vengono eliminate dopo 24 ore.
 
 ## Risoluzione dei problemi
 

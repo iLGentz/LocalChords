@@ -24,6 +24,8 @@ from app.db.models import (
     TERMINAL_JOB_STATUSES,
     Job,
     JobStatus,
+    Song,
+    SongStatus,
     Worker,
 )
 from app.db.session import Database
@@ -35,6 +37,11 @@ MAX_ERROR_MESSAGE = 1000
 # Ordine di inserimento: il rowid di SQLite cresce a ogni INSERT. ``created_at`` non basta,
 # perché due job creati nello stesso istante avrebbero lo stesso valore.
 _INSERT_ORDER: ColumnClause[int] = literal_column("jobs.rowid", Integer)
+
+_SONG_STATUS_ON_FINISH = {
+    JobStatus.FAILED: SongStatus.FAILED,
+    JobStatus.CANCELLED: SongStatus.CANCELLED,
+}
 
 
 @dataclass(frozen=True)
@@ -99,7 +106,7 @@ class JobQueue:
         """
         now = utcnow()
         with self.db.session() as s:
-            s.execute(
+            cancelled = s.execute(
                 update(Job)
                 .where(Job.id == job_id, Job.status == JobStatus.QUEUED)
                 .values(
@@ -110,6 +117,15 @@ class JobQueue:
                     updated_at=now,
                 )
             )
+            if cancelled.rowcount == 1:  # type: ignore[attr-defined]
+                s.execute(
+                    update(Song)
+                    .where(
+                        Song.id == select(Job.song_id).where(Job.id == job_id).scalar_subquery(),
+                        Song.status.in_((SongStatus.IMPORTING, SongStatus.PROCESSING)),
+                    )
+                    .values(status=SongStatus.CANCELLED, updated_at=now)
+                )
             s.execute(
                 update(Job)
                 .where(Job.id == job_id, Job.status.in_(RUNNING_JOB_STATUSES))
@@ -239,7 +255,7 @@ class JobQueue:
     def _finish(self, job_id: str, status: JobStatus, **values: Any) -> None:
         now = utcnow()
         with self.db.session() as s:
-            s.execute(
+            result = s.execute(
                 update(Job)
                 .where(Job.id == job_id, Job.status.not_in(TERMINAL_JOB_STATUSES))
                 .values(status=status, finished_at=now, updated_at=now, eta_s=None, **values)
@@ -247,6 +263,17 @@ class JobQueue:
             s.execute(
                 update(Worker).where(Worker.current_job_id == job_id).values(current_job_id=None)
             )
+            song_status = _SONG_STATUS_ON_FINISH.get(status)
+            if result.rowcount == 1 and song_status is not None:  # type: ignore[attr-defined]
+                # Il brano segue l'esito del suo job (anche per i job recuperati dopo un crash).
+                s.execute(
+                    update(Song)
+                    .where(
+                        Song.id == select(Job.song_id).where(Job.id == job_id).scalar_subquery(),
+                        Song.status.in_((SongStatus.IMPORTING, SongStatus.PROCESSING)),
+                    )
+                    .values(status=song_status, updated_at=now)
+                )
         log.info("job terminato", extra={"job_id": job_id, "status": status.value})
 
     # ------------------------------------------------------------- worker

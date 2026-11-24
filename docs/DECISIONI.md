@@ -10,6 +10,80 @@ fase 1 è stato verificato con quei test prima della rimozione; dalla fase 2 in 
 controlli sono solo statici (mypy strict, ruff, `tsc`, build) finché non si riprendono.
 La configurazione di pytest in `pyproject.toml` resta pronta.
 
+## Fase 2 — import (24/11/2026)
+
+### Upload in due passi con anteprima
+Il brief chiede l'anteprima dei metadati prima dell'analisi. `POST /api/songs/upload` riceve
+il file, lo verifica con ffprobe e restituisce l'anteprima **senza creare il brano**; il file
+resta in `data/uploads/<id>/` con un `meta.json`. La conferma (`.../confirm`) crea brano,
+asset e job nella stessa transazione. Le anteprime abbandonate si eliminano dopo 24 ore,
+all'avvio. Scelta rispetto a "crea subito il brano in bozza": il catalogo non si riempie di
+voci mai confermate.
+
+### Corpo grezzo invece di multipart
+Il file viaggia come corpo della richiesta (`application/octet-stream`) con il nome
+nell'header `X-Filename` (codificato URI). Così il server scrive direttamente su disco
+calcolando SHA-256 e dimensione mentre riceve, interrompe appena si supera il limite e non
+serve `python-multipart`. Il frontend usa `XMLHttpRequest` per avere l'avanzamento
+dell'invio, che `fetch` non espone.
+
+### Validazione in tre livelli
+1. estensione (MP3, WAV, M4A, FLAC, OGG) → `unsupported_format` (415) prima di leggere il corpo;
+2. ffprobe: contenuto davvero audio e del formato dichiarato, presenza di una traccia audio,
+   durata tra 3 s e 60 min → `invalid_audio`, `no_audio_track`, `audio_too_short`,
+   `audio_too_long` (422);
+3. durante la conversione: picco sotto -60 dBFS → `audio_silent` ("audio senza tracce
+   sufficienti").
+
+### Audio normalizzato
+Ogni brano ottiene `data/audio/<id>/audio.flac`: FLAC 44,1 kHz, stereo, 16 bit. È il
+formato d'ingresso comune per analisi e separazione (BS-RoFormer e htdemucs lavorano a
+44,1 kHz) e il player lo riproduce in WebView2. L'originale resta accanto
+(`original.<ext>`). Il picco si misura nello stesso passaggio di ffmpeg (`volumedetect`),
+senza una seconda decodifica. ffmpeg scrive su un file `.part` rinominato alla fine, e
+viene terminato subito in caso di annullamento.
+
+### Cache e duplicati
+- File: SHA-256 dell'originale, già calcolato durante l'upload. Se esiste un brano con lo
+  stesso checksum, l'anteprima lo segnala e la conferma risponde `duplicate_song` (409) con
+  l'id del brano esistente.
+- YouTube: prima per URL canonico (`watch?v=<id>`), poi per checksum dopo il download.
+
+### Stato del brano legato al job
+Quando un job termina con `failed` o `cancelled` (anche se recuperato dopo un crash del
+worker o annullato mentre era in coda), la coda aggiorna nello stesso UPDATE lo stato del
+brano collegato. Aggiunto lo stato `cancelled` per i brani; non serve una migrazione perché
+gli enum sono stringhe senza vincolo. L'errore mostrato all'utente viene dall'ultimo job.
+
+### Eliminazione di un brano in elaborazione
+`DELETE /api/songs/{id}` annulla i job in coda; se uno è in esecuzione chiede l'annullamento
+e risponde `song_busy` (409) invece di cancellare file che il worker sta ancora scrivendo.
+
+### YouTube
+- yt-dlp come extra opzionale `youtube` con `yt-dlp[default,deno]`: dalla fine del 2025
+  yt-dlp richiede un runtime JavaScript esterno per YouTube, e l'extra `deno` lo installa
+  come pacchetto Python. L'adapter aggiunge la cartella dell'interprete al `PATH` così che
+  yt-dlp lo trovi anche quando l'app parte con `pythonw.exe` senza venv attivo.
+  **Da verificare sul PC di test**, insieme al possibile blocco dell'antivirus su `deno.exe`.
+- Niente cookie e niente account: nessun aggiramento di limiti d'età, DRM o restrizioni.
+- Gli errori di yt-dlp sono tradotti in codici (`video_private`, `video_age_restricted`,
+  `video_geo_blocked`, `video_unavailable`, `network_error`, ...). Se un annullamento viene
+  trasformato da yt-dlp in un errore generico, il job controlla subito il flag e termina come
+  `cancelled`.
+- Nessuna miniatura del video: caricarla dall'interfaccia sarebbe una chiamata esterna in
+  più.
+
+### Modifica di titolo, artista e album
+`PATCH /api/songs/{id}` senza cronologia di annulla/ripristina: il piano la richiede per
+accordi, testi, sezioni e grid, che arrivano con l'editor. Se servirà anche per i metadati
+si estende `edit_history`.
+
+### Moduli aggiunti all'architettura
+`app/importing/` (upload, catalogo, job di import, validazione) e `app/media/` (ffprobe e
+ffmpeg), oltre a `app/errors.py` con `AppError`: errore previsto con codice stabile,
+tradotto in risposta API con lo stato HTTP giusto (tabella in `app/api/errors.py`) oppure
+in errore del job.
+
 ## Fase 1 — scheletro (24/11/2026)
 
 ### Venv creato con `python -m venv`, non con `uv venv`

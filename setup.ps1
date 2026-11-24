@@ -19,6 +19,8 @@
   Non ricompila l'interfaccia.
 .PARAMETER Dev
   Installa anche gli strumenti di sviluppo (pytest, mypy, ruff).
+.PARAMETER YouTube
+  Installa e attiva l'adapter YouTube (yt-dlp e Deno). Disattivato di default.
 #>
 [CmdletBinding()]
 param(
@@ -26,7 +28,8 @@ param(
     [string]$Runtime = 'auto',
     [switch]$SkipFfmpeg,
     [switch]$SkipFrontend,
-    [switch]$Dev
+    [switch]$Dev,
+    [switch]$YouTube
 )
 
 $ErrorActionPreference = 'Stop'
@@ -115,6 +118,8 @@ if (-not (Test-Executable $venvPython)) {
 $syncArgs = @('sync')
 if (Test-Path (Join-Path $Root 'uv.lock')) { $syncArgs += '--frozen' }
 if (-not $Dev) { $syncArgs += '--no-dev' }
+$youtubeInstalled = $YouTube -or ((Test-Path (Join-Path $Root '.env')) -and (Select-String -Path (Join-Path $Root '.env') -Pattern '^LOCALCHORDS_YOUTUBE_ENABLED=true' -Quiet))
+if ($youtubeInstalled) { $syncArgs += @('--extra', 'youtube') }
 Invoke-Native uv $syncArgs
 Write-Ok 'Dipendenze installate'
 
@@ -137,6 +142,10 @@ if (-not (Test-Path $envFile)) {
     Write-Ok '.env creato da .env.example'
 }
 Set-EnvValue $envFile 'LOCALCHORDS_INSTALLED_RUNTIME' $Runtime
+if ($YouTube) {
+    Set-EnvValue $envFile 'LOCALCHORDS_YOUTUBE_ENABLED' 'true'
+    Write-Ok 'Adapter YouTube installato e attivato'
+}
 
 # ------------------------------------------------------------------------- FFmpeg
 Write-Step 'FFmpeg'

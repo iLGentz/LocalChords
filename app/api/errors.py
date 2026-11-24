@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.errors import AppError
+
 log = logging.getLogger(__name__)
 
 
@@ -46,10 +48,46 @@ _HTTP_CODES = {
 }
 
 
+# Stato HTTP per i codici degli errori applicativi (AppError). Predefinito: 400.
+APP_ERROR_STATUS: dict[str, int] = {
+    "file_too_large": 413,
+    "unsupported_format": 415,
+    "empty_file": 422,
+    "invalid_audio": 422,
+    "no_audio_track": 422,
+    "audio_too_short": 422,
+    "audio_too_long": 422,
+    "audio_silent": 422,
+    "invalid_url": 422,
+    "live_not_supported": 422,
+    "upload_not_found": 404,
+    "song_not_found": 404,
+    "audio_not_found": 404,
+    "video_unavailable": 404,
+    "duplicate_song": 409,
+    "song_busy": 409,
+    "song_not_retryable": 409,
+    "youtube_disabled": 403,
+    "video_private": 403,
+    "video_age_restricted": 403,
+    "video_geo_blocked": 403,
+    "youtube_not_installed": 501,
+    "youtube_runtime_missing": 501,
+    "network_error": 502,
+    "download_failed": 502,
+    "ffmpeg_missing": 503,
+}
+
+
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def _api_error(_req: Request, exc: ApiError) -> JSONResponse:
         return _response(exc.status_code, exc.code, exc.message, exc.detail)
+
+    @app.exception_handler(AppError)
+    async def _app_error(_req: Request, exc: AppError) -> JSONResponse:
+        status = APP_ERROR_STATUS.get(exc.code, 400)
+        return _response(status, exc.code, exc.message, exc.detail)
 
     @app.exception_handler(RequestValidationError)
     async def _validation(_req: Request, exc: RequestValidationError) -> JSONResponse:

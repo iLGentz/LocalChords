@@ -8,7 +8,8 @@ import time
 
 from app.config import Settings
 from app.db.session import Database
-from app.worker.context import JobCancelled, JobContext, JobError, JobInterrupted
+from app.errors import AppError
+from app.worker.context import JobCancelled, JobContext, JobInterrupted
 from app.worker.queue import ClaimedJob, JobQueue
 from app.worker.registry import HandlerRegistry
 
@@ -71,7 +72,7 @@ class JobWorker:
         except JobInterrupted:
             log.info("job interrotto dalla chiusura del worker", extra=extra)
             self.queue.requeue(job.id, count_attempt=False)
-        except JobError as exc:
+        except AppError as exc:  # JobError e gli errori previsti dei moduli (es. MediaError)
             log.warning("job fallito", extra={**extra, "code": exc.code, "error": exc.message})
             self.queue.fail(job.id, exc.code, exc.message)
         except Exception:
