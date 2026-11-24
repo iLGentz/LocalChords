@@ -5,6 +5,8 @@ import { ChordSheet } from "@/components/ChordSheet";
 import { Button, Notice } from "@/components/ui";
 import { WaveformCanvas } from "@/components/WaveformCanvas";
 import type { AnalysisState } from "@/hooks/useAnalysis";
+import type { ChordEvent } from "@/lib/api";
+import type { DisplayedChord } from "@/lib/music";
 
 function confidenceLabel(value: number | null): { text: string; tone: string } {
   if (value === null) return { text: "—", tone: "text-ink-muted" };
@@ -25,12 +27,19 @@ interface AnalysisPanelProps {
   busy: boolean;
   /** Contenuto tra waveform e accordi (es. il mixer). */
   afterWaveform?: ReactNode;
+  /** Controlli di trasposizione e visualizzazione, sopra gli accordi. */
+  practice?: ReactNode;
+  /** Diagrammi, in fondo alla sezione degli accordi. */
+  diagrams?: ReactNode;
+  display: (c: ChordEvent) => DisplayedChord | null;
+  compact: boolean;
+  onExempt: (c: ChordEvent, exempt: boolean) => void;
   /** Contenuto sotto gli accordi (es. i testi). */
   children?: ReactNode;
 }
 
 export function AnalysisPanel(props: AnalysisPanelProps) {
-  const { state, duration, time, loop, snap, onSeek, onLoop, onReanalyze, busy, afterWaveform, children } = props;
+  const { state, duration, time, loop, snap, onSeek, onLoop, onReanalyze, busy, afterWaveform, practice, diagrams, display, compact, onExempt, children } = props;
   const [confirmReanalyze, setConfirmReanalyze] = useState(false);
   const analysis = state.kind === "ready" ? state.analysis : null;
 
@@ -76,6 +85,8 @@ export function AnalysisPanel(props: AnalysisPanelProps) {
       )}
       {state.kind === "error" && <Notice tone="error">{state.error.message}</Notice>}
 
+      {analysis?.analyzed && practice}
+
       {analysis?.analyzed && (
         <section aria-labelledby="chords-title" className="rounded-lg border border-line bg-surface p-4">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
@@ -88,10 +99,19 @@ export function AnalysisPanel(props: AnalysisPanelProps) {
             </p>
           </div>
           {analysis.chords.length > 0 ? (
-            <ChordSheet analysis={analysis} time={time} onSeek={onSeek} onLoop={(a, b) => onLoop({ a, b, enabled: true })} />
+            <ChordSheet
+              analysis={analysis}
+              time={time}
+              onSeek={onSeek}
+              onLoop={(a, b) => onLoop({ a, b, enabled: true })}
+              display={display}
+              compact={compact}
+              onExempt={onExempt}
+            />
           ) : (
             <p className="text-sm text-ink-muted">Nessun accordo rilevato.</p>
           )}
+          {diagrams && <div className="mt-4 border-t border-line pt-3">{diagrams}</div>}
         </section>
       )}
 

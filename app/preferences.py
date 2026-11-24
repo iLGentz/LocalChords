@@ -24,6 +24,40 @@ class ProcessingPreferences(BaseModel):
 _KEYS = tuple(ProcessingPreferences.model_fields)
 
 
+class DisplayPreferences(BaseModel):
+    notation: Literal["american", "italian", "numeric"] = "american"
+    instrument: Literal["guitar", "ukulele", "piano"] = "guitar"
+    compact: bool = False
+
+
+_DISPLAY_PREFIX = "display."
+
+
+def load_display(db: Database) -> DisplayPreferences:
+    keys = [_DISPLAY_PREFIX + k for k in DisplayPreferences.model_fields]
+    with db.read_session() as s:
+        rows = {
+            r.key.removeprefix(_DISPLAY_PREFIX): r.value
+            for r in s.scalars(select(UserPreference).where(UserPreference.key.in_(keys)))
+        }
+    try:
+        return DisplayPreferences.model_validate(rows)
+    except ValidationError:
+        return DisplayPreferences()
+
+
+def save_display(db: Database, prefs: DisplayPreferences) -> DisplayPreferences:
+    with db.session() as s:
+        for key, value in prefs.model_dump(mode="json").items():
+            row = s.get(UserPreference, _DISPLAY_PREFIX + key)
+            if row is None:
+                s.add(UserPreference(key=_DISPLAY_PREFIX + key, value=value))
+            else:
+                row.value = value
+                row.updated_at = utcnow()
+    return prefs
+
+
 def load(db: Database, settings: Settings) -> ProcessingPreferences:
     with db.read_session() as s:
         rows = {

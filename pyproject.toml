@@ -84,7 +84,7 @@ packages = ["app"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["webview", "webview.*", "yt_dlp", "yt_dlp.*", "soundfile", "librosa", "librosa.*", "audio_separator", "audio_separator.*", "onnxruntime", "torch", "torch.*", "faster_whisper", "faster_whisper.*"]
+module = ["webview", "webview.*", "yt_dlp", "yt_dlp.*", "soundfile", "librosa", "librosa.*", "audio_separator", "audio_separator.*", "onnxruntime", "torch", "torch.*", "faster_whisper", "faster_whisper.*", "scipy", "scipy.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

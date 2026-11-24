@@ -31,6 +31,7 @@ class ChordOut(BaseModel):
     confidence: float | None
     beat_position: int | None
     origin: Origin
+    simplify_exempt: bool
 
 
 class SectionOut(BaseModel):
@@ -73,6 +74,7 @@ def _chords(db: DatabaseDep, song_id: str) -> list[ChordOut]:
                 confidence=c.confidence,
                 beat_position=c.beat_position,
                 origin=c.origin,
+                simplify_exempt=c.simplify_exempt,
             )
             for c in rows
         ]

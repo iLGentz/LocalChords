@@ -4,14 +4,15 @@ App desktop **per Windows 10/11 (x64)**, local-first, che trasforma un file audi
 testi sincronizzati, tab, diagrammi e 6 stem con mixer e strumenti di pratica.
 Tutto gira sul tuo PC: nessun account, nessun servizio cloud obbligatorio.
 
-> **Stato:** fase 6 di 10. Scheletro, importazione da file locale (e da YouTube, se
+> **Stato:** fase 7 di 10. Scheletro, importazione da file locale (e da YouTube, se
 > attivato), analisi (beat grid, BPM, tonalità, accordi, sezioni, waveform), separazione in
 > 6 stem, rilevamento dell'hardware con profili, gestione dello spazio su disco e testi
 > sincronizzati parola per parola con editor, player con mixer degli stem, velocità, tonalità,
-> loop e metronomo. Trasposizione degli accordi e diagrammi arrivano nella fase 7 (vedi `PIANO.md`).
+> loop e metronomo, trasposizione, capo, semplificazione, notazioni, diagrammi e tab. Restano
+> interfaccia completa, export e verifiche finali (fasi 8-10, vedi `PIANO.md`).
 >
 > I test automatici sono rimandati: verranno scritti ed eseguiti sul PC di test con GPU
-> NVIDIA. Il codice delle fasi 2-6 è stato controllato solo staticamente (mypy, ruff, tsc):
+> NVIDIA. Il codice delle fasi 2-7 è stato controllato solo staticamente (mypy, ruff, tsc):
 > nessun brano è ancora stato importato, analizzato, separato, trascritto o riprodotto.
 
 ## Prerequisiti
@@ -158,6 +159,28 @@ Nella scheda del brano:
 
 Memoria: i 6 stem decodificati occupano circa 500 MB per un brano di 4 minuti (44,1 kHz).
 
+## Trasposizione, capo, semplificazione, diagrammi, tab
+
+- **Trasposizione** da -11 a +11 semitoni con la tonalità risultante; la grafia (diesis o
+  bemolle) segue la tonalità. L'originale compare sotto ogni accordo trasposto. "Applica
+  all'audio" porta la tonalità del player allo stesso intervallo.
+- **Capo** da 0 a 7: gli accordi diventano le forme da suonare. "Suggerito" indica il capo che
+  riduce barré e posizioni alte (stima sulle diteggiature di chords-db, pesata per durata).
+- **Semplificazione** su tre livelli: originale; intermedia (maj7, sus e aug diventano triadi,
+  i rivolti perdono il basso); facile (anche 7, m7 e dim diventano maggiori o minori). Gli
+  accordi semplificati hanno un bordo tratteggiato; selezionandone uno si legge il motivo e
+  si può ripristinare solo quello (scelta salvata).
+- **Notazioni**: americana (C, Am), italiana (Do, Lam), numerica (gradi rispetto alla tonalità).
+- **Diagrammi** per chitarra e ukulele (diteggiature con numeri delle dita e barré, da
+  chords-db) e pianoforte; quello dell'accordo corrente è evidenziato.
+- **Vista compatta** (8 battute per riga) o estesa (4 battute, con l'accordo originale).
+- **Tab di chitarra e basso** (indicative) dagli stem: note rilevate con il modello Basic
+  Pitch (0,7 MB, scaricato al primo uso), corda e tasto scelti per la diteggiatura più comoda.
+  Seguono trasposizione e capo.
+
+Trasposizione, capo e semplificazione si salvano per brano; notazione, strumento e vista sono
+preferenze generali.
+
 ## Spazio su disco
 
 In **Impostazioni → Spazio su disco**: occupazione di audio, stem, waveform, modelli, cache,
@@ -222,6 +245,7 @@ app\separation\ modelli, separazione in un processo figlio, job di download e se
 app\hardware.py rilevamento di GPU e runtime, profili
 app\lyrics\     LRCLIB, Whisper in un processo figlio, allineamento, editor, job dei testi
 app\editing\    cronologia persistente delle modifiche (annulla/ripristina)
+app\tabs\       Basic Pitch in ONNX Runtime e assegnazione di corda e tasto
 app\media\      wrapper di ffprobe e ffmpeg
 app\storage\    struttura della cartella data\
 app\adapters\   adapter YouTube (yt-dlp), facoltativo
@@ -279,6 +303,11 @@ frontend\       Vite + React + TypeScript + Tailwind, compilato in statico e ser
 | POST | `/api/songs/{id}/lyrics/{lineId}/restore`, `/lyrics/restore` | ripristina l'originale (riga o tutto) |
 | POST | `/api/songs/{id}/lyrics/refresh` | nuova ricerca o testo incollato (`text`, `search`) |
 | POST | `/api/songs/{id}/undo`, `/redo` | annulla / ripristina l'ultima modifica |
+| PATCH | `/api/songs/{id}/view` | trasposizione, capo, semplificazione del brano |
+| PATCH | `/api/songs/{id}/chords/{chordId}` | modifica un accordo (`chord`, `simplify_exempt`) |
+| POST | `/api/songs/{id}/chords/{chordId}/restore` | riporta l'accordo all'originale |
+| GET / PUT | `/api/settings/display` | notazione, strumento, vista compatta |
+| GET / POST | `/api/songs/{id}/tabs` | tab di chitarra e basso / generazione |
 
 Le anteprime di upload non confermate vengono eliminate dopo 24 ore.
 

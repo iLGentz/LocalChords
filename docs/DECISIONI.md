@@ -10,6 +10,47 @@ fase 1 è stato verificato con quei test prima della rimozione; dalla fase 2 in 
 controlli sono solo statici (mypy strict, ruff, `tsc`, build) finché non si riprendono.
 La configurazione di pytest in `pyproject.toml` resta pronta.
 
+## Fase 7 — trasposizione, capo, semplificazione, diagrammi, tab (24/11/2026)
+
+### Basic Pitch senza TensorFlow
+`basic-pitch` 0.4.0 su Windows con Python 3.12 richiede `tensorflow<2.15.1`, che non esiste
+per 3.12. Il wheel ufficiale contiene però il modello ONNX (`nmp.onnx`, 225 KB): in
+`app/tabs/basic_pitch.py` inferenza (finestre di 2 s con 30 frame di sovrapposizione) e
+creazione delle note (`output_to_notes_polyphonic` con inferenza degli onset e "melodia
+trick") sono un porting fedele del codice originale (Apache-2.0, attribuito nel file), con
+le stesse costanti e soglie; manca solo il pitch bend. Nomi degli input/output, valori di
+`MIDI_OFFSET` e `MAX_FREQ_IDX` letti dal sorgente. Controllo: un La4 sintetico tra 0,5 e
+2,5 s viene rilevato come MIDI 69 da 0,49 a 2,50 s. Il modello si scarica al primo uso dal
+wheel su PyPI con verifica SHA-256.
+
+### Tab
+Corda e tasto con Viterbi sui gruppi di note simultanee (entro 40 ms): costo per spostamento
+della mano (più basso dopo una pausa), tasti alti ed estensione delle dita (≤ 4 tasti).
+Accordatura standard (chitarra EADGBE, basso EADG), tasti fino al 20. Generazione su
+richiesta (servono gli stem). Nell'interfaccia: testo per battuta (16 posizioni), trasposte
+nel frontend: stessa corda se possibile, altrimenti la più vicina; "?" se la nota non è
+suonabile. Sono **indicative**: il timbro non dice su quale corda è suonata una nota.
+
+### Teoria nel frontend
+`frontend/src/lib/music.ts`: ordine semplificazione → trasposizione → capo → notazione.
+Grafia con diesis o bemolle in base all'armatura della tonalità risultante (Tonal.js);
+notazione numerica rispetto alla tonica; note dell'accordo per il pianoforte con Tonal.js.
+Le regole di semplificazione e le relative spiegazioni sono una tabella esplicita (non un
+algoritmo opaco), facile da rivedere.
+
+### Diagrammi e capo
+chords-db (MIT) caricato su richiesta in un chunk separato (circa 25 KB compressi per
+strumento). Per ogni accordo si mostra la diteggiatura più semplice (barré, posizione,
+estensione). Il capo suggerito minimizza la somma, pesata per durata, della difficoltà delle
+forme, con una piccola penalità per capo alto.
+
+### Persistenza
+Trasposizione, capo e semplificazione per brano (colonne esistenti di `songs`); notazione,
+strumento e vista compatta come preferenze generali (`user_preferences`, chiavi
+`display.*`). Migrazione `0002`: `chord_events.simplify_exempt` (con default lato server,
+verificata su un database con accordi esistenti) per "ripristina il singolo accordo";
+il cambio passa dalla cronologia, quindi è annullabile.
+
 ## Fase 6 — player (24/11/2026)
 
 ### Motore Web Audio

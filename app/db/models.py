@@ -258,6 +258,8 @@ class ChordEvent(EditableMixin, TimestampMixin, Base):
     original_start_s: Mapped[float | None] = mapped_column(Float)
     original_end_s: Mapped[float | None] = mapped_column(Float)
     original_chord: Mapped[str | None] = mapped_column(String(32))
+    simplify_exempt: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    """L'utente ha ripristinato questo accordo: la semplificazione non lo tocca."""
 
 
 class Section(EditableMixin, TimestampMixin, Base):

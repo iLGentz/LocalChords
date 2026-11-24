@@ -110,6 +110,9 @@ class SongOut(BaseModel):
     updated_at: datetime
     job: JobOut | None
     audio_url: str | None
+    transpose: int
+    capo: int
+    simplification: str
 
     @classmethod
     def from_song(cls, song: Song, job: Job | None, *, has_audio: bool = False) -> SongOut:
@@ -128,6 +131,9 @@ class SongOut(BaseModel):
             updated_at=song.updated_at,
             job=JobOut.from_job(job) if job is not None else None,
             audio_url=f"/api/songs/{song.id}/audio" if has_audio else None,
+            transpose=song.transpose,
+            capo=song.capo,
+            simplification=song.simplification.value,
         )
 
 

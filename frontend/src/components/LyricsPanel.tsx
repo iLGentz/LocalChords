@@ -19,11 +19,13 @@ interface LyricsPanelProps {
   song: Song;
   time: number;
   onSeek: (t: number) => void;
+  /** Nome dell'accordo come va mostrato sopra le parole. */
+  chordLabel: (c: ChordEvent) => string;
 }
 
 type Mode = "karaoke" | "edit";
 
-export function LyricsPanel({ song, time, onSeek }: LyricsPanelProps) {
+export function LyricsPanel({ song, time, onSeek, chordLabel }: LyricsPanelProps) {
   const [lyrics, setLyrics] = useState<Lyrics | null>(null);
   const [chords, setChords] = useState<ChordEvent[]>([]);
   const [error, setError] = useState<ApiError | null>(null);
@@ -137,7 +139,7 @@ export function LyricsPanel({ song, time, onSeek }: LyricsPanelProps) {
       {lyrics && !working && <StatusNote lyrics={lyrics} onChanged={reload} />}
 
       {lyrics && hasLines && mode === "karaoke" && (
-        <Karaoke lines={lyrics.lines} chords={chords} time={time} onSeek={onSeek} />
+        <Karaoke lines={lyrics.lines} chords={chords} chordLabel={chordLabel} time={time} onSeek={onSeek} />
       )}
       {lyrics && hasLines && mode === "edit" && (
         <Editor songId={song.id} lines={lyrics.lines} time={time} onSeek={onSeek} run={run} />
@@ -317,7 +319,7 @@ function SourceActions({
 
 // ---------------------------------------------------------------- karaoke
 
-function chordsByWord(line: LyricLine, chords: ChordEvent[]): Map<string, string> {
+function chordsByWord(line: LyricLine, chords: ChordEvent[], label: (c: ChordEvent) => string): Map<string, string> {
   const map = new Map<string, string>();
   const timed = line.words.filter((w) => w.start_s !== null);
   if (line.start_s === null || timed.length === 0) return map;
@@ -327,7 +329,7 @@ function chordsByWord(line: LyricLine, chords: ChordEvent[]): Map<string, string
     // la parola che inizia per ultima prima del cambio d'accordo (o la prima della riga)
     let target = timed[0];
     for (const w of timed) if ((w.start_s ?? 0) <= c.start_s + 0.15) target = w;
-    if (target && !map.has(target.id)) map.set(target.id, c.chord);
+    if (target && !map.has(target.id)) map.set(target.id, label(c));
   }
   return map;
 }
@@ -335,11 +337,13 @@ function chordsByWord(line: LyricLine, chords: ChordEvent[]): Map<string, string
 function Karaoke({
   lines,
   chords,
+  chordLabel,
   time,
   onSeek,
 }: {
   lines: LyricLine[];
   chords: ChordEvent[];
+  chordLabel: (c: ChordEvent) => string;
   time: number;
   onSeek: (t: number) => void;
 }) {
@@ -352,7 +356,7 @@ function Karaoke({
     });
     return idx;
   }, [lines, time]);
-  const chordMaps = useMemo(() => lines.map((l) => chordsByWord(l, chords)), [lines, chords]);
+  const chordMaps = useMemo(() => lines.map((l) => chordsByWord(l, chords, chordLabel)), [lines, chords, chordLabel]);
 
   useEffect(() => {
     if (follow) activeRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });

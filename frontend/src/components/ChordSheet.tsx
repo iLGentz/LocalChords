@@ -1,4 +1,6 @@
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
+
+import type { DisplayedChord } from "@/lib/music";
 
 import type { Analysis, ChordEvent, SectionInfo } from "@/lib/api";
 
@@ -45,26 +47,66 @@ interface ChordSheetProps {
   onSeek: (time: number) => void;
   /** Ripete un intervallo (battuta con Maiusc+clic, oppure sezione). */
   onLoop: (start: number, end: number) => void;
+  /** Accordo come va mostrato (semplificazione, trasposizione, capo, notazione). */
+  display: (c: ChordEvent) => DisplayedChord | null;
+  compact: boolean;
+  /** Esclude (o reinclude) un accordo dalla semplificazione. */
+  onExempt: (c: ChordEvent, exempt: boolean) => void;
 }
 
 /** Accordi per battuta, con le sezioni e l'evidenziazione della posizione corrente. */
-export function ChordSheet({ analysis, time, onSeek, onLoop }: ChordSheetProps) {
+export function ChordSheet(props: ChordSheetProps) {
+  const { analysis, time, onSeek, onLoop, display, compact, onExempt } = props;
   const bars = useMemo(() => buildBars(analysis), [analysis]);
   const visible = (c: ChordEvent): boolean => c.chord !== "N";
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = analysis.chords.find((c) => c.id === selectedId) ?? null;
+  const selectedView = selected ? display(selected) : null;
+  const chip = (c: ChordEvent, onLoopBar?: () => void) => (
+    <ChordChip
+      key={c.id}
+      chord={c}
+      view={display(c)}
+      compact={compact}
+      active={time >= c.start_s && time < c.end_s}
+      onSeek={(t) => {
+        setSelectedId(c.id);
+        onSeek(t);
+      }}
+      {...(onLoopBar ? { onLoopBar } : {})}
+    />
+  );
+  const detail = selected && selectedView && (selectedView.simplifiedReason || selected.simplify_exempt || selectedView.original) && (
+    <p className="mt-3 flex flex-wrap items-center gap-2 rounded-md bg-ground px-3 py-2 text-xs text-ink-muted" aria-live="polite">
+      <span className="font-mono font-semibold text-ink">{selectedView.label}</span>
+      {selectedView.original && <span>originale: <span className="font-mono">{selectedView.original}</span></span>}
+      {selectedView.simplifiedReason && <span>· {selectedView.simplifiedReason}</span>}
+      {selectedView.simplifiedReason && (
+        <button type="button" className="rounded px-1.5 py-0.5 text-accent hover:bg-raised" onClick={() => onExempt(selected, true)}>
+          Ripristina questo accordo
+        </button>
+      )}
+      {selected.simplify_exempt && (
+        <button type="button" className="rounded px-1.5 py-0.5 text-accent hover:bg-raised" onClick={() => onExempt(selected, false)}>
+          Semplifica di nuovo
+        </button>
+      )}
+    </p>
+  );
 
   if (bars.length === 0) {
     return (
       <ul className="flex flex-wrap gap-2" aria-label="Accordi">
         {analysis.chords.filter(visible).map((c) => (
-          <li key={c.id}>
-            <ChordChip chord={c} active={time >= c.start_s && time < c.end_s} onSeek={onSeek} />
-          </li>
+          <li key={c.id}>{chip(c)}</li>
         ))}
+        {detail}
       </ul>
     );
   }
 
   return (
+    <div>
     <div className="flex flex-wrap gap-y-2" aria-label="Accordi per battuta" role="list">
       {bars.map((bar) => {
         const activeBar = time >= bar.start && time < bar.end;
@@ -88,7 +130,7 @@ export function ChordSheet({ analysis, time, onSeek, onLoop }: ChordSheetProps) 
             )}
             <div
               role="listitem"
-              className={`flex h-12 w-1/4 min-w-0 items-center gap-1 border-l px-2 ${
+              className={`flex min-w-0 items-center gap-1 border-l px-2 ${compact ? "h-9 w-1/8" : "h-14 w-1/4"} ${
                 activeBar ? "border-accent bg-accent/10" : "border-line"
               }`}
             >
@@ -97,51 +139,54 @@ export function ChordSheet({ analysis, time, onSeek, onLoop }: ChordSheetProps) 
                   type="button"
                   onClick={(e) => (e.shiftKey ? onLoop(bar.start, bar.end) : onSeek(bar.start))}
                   className="truncate font-mono text-sm text-ink-muted/60 hover:text-ink-muted"
-                  title={`Prosegue: ${bar.carried.chord}`}
+                  title="Prosegue dalla battuta precedente"
                 >
-                  {bar.carried.chord}
+                  {display(bar.carried)?.label ?? bar.carried.chord}
                 </button>
               )}
-              {bar.chords.filter(visible).map((c) => (
-                <ChordChip
-                  key={c.id}
-                  chord={c}
-                  active={time >= c.start_s && time < c.end_s}
-                  onSeek={onSeek}
-                  onLoopBar={() => onLoop(bar.start, bar.end)}
-                />
-              ))}
+              {bar.chords.filter(visible).map((c) => chip(c, () => onLoop(bar.start, bar.end)))}
             </div>
           </Fragment>
         );
       })}
+    </div>
+    {detail}
     </div>
   );
 }
 
 function ChordChip({
   chord,
+  view,
+  compact,
   active,
   onSeek,
   onLoopBar,
 }: {
   chord: ChordEvent;
+  view: DisplayedChord | null;
+  compact: boolean;
   active: boolean;
   onSeek: (t: number) => void;
   onLoopBar?: () => void;
 }) {
   const lowConfidence = chord.confidence !== null && chord.confidence < 0.4;
+  const label = view?.label ?? chord.chord;
+  const simplified = Boolean(view?.simplifiedReason);
   return (
     <button
       type="button"
       onClick={(e) => (e.shiftKey && onLoopBar ? onLoopBar() : onSeek(chord.start_s))}
       aria-current={active ? "true" : undefined}
-      title={
-        lowConfidence
-          ? `${chord.chord} — rilevamento incerto (${Math.round((chord.confidence ?? 0) * 100)}%)`
-          : chord.chord
-      }
-      className={`truncate rounded px-1.5 py-0.5 font-mono text-sm font-semibold transition-colors ${
+      title={[
+        label,
+        view?.original ? `originale ${view.original}` : null,
+        view?.simplifiedReason ? `semplificato: ${view.simplifiedReason}` : null,
+        lowConfidence ? `rilevamento incerto (${Math.round((chord.confidence ?? 0) * 100)}%)` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")}
+      className={`flex flex-col items-start truncate rounded px-1.5 py-0.5 font-mono text-sm font-semibold leading-tight transition-colors ${simplified ? "outline-dashed outline-1 outline-accent/60" : ""} ${
         active
           ? "bg-accent text-ground"
           : lowConfidence
@@ -149,7 +194,10 @@ function ChordChip({
             : "text-ink hover:bg-raised"
       }`}
     >
-      {chord.chord}
+      <span>{label}</span>
+      {!compact && view?.original && (
+        <span className={`text-[10px] font-normal ${active ? "text-ground/80" : "text-ink-muted"}`}>{view.original}</span>
+      )}
     </button>
   );
 }

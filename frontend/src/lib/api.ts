@@ -169,6 +169,9 @@ export interface Song {
   updated_at: string;
   job: Job | null;
   audio_url: string | null;
+  transpose: number;
+  capo: number;
+  simplification: "original" | "intermediate" | "easy";
 }
 
 export interface SongRef {
@@ -239,6 +242,7 @@ export interface ChordEvent {
   confidence: number | null;
   beat_position: number | null;
   origin: "analysis" | "user";
+  simplify_exempt: boolean;
 }
 
 export interface SectionInfo {
