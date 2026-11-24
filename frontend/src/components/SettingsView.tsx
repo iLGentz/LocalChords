@@ -14,12 +14,14 @@ import {
   type ProfileChoice,
   type StorageReport,
 } from "@/lib/api";
+import { THEME_LABEL, useTheme, type ThemeChoice } from "@/hooks/useTheme";
 import { formatBytes, formatEta } from "@/lib/format";
 
 export function SettingsView({ onStorageChanged }: { onStorageChanged: () => void }) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <h1 className="text-xl font-semibold">Impostazioni</h1>
+      <AppearanceSection />
       <ProcessingSection />
       <ModelsSection />
       <StorageSection onChanged={onStorageChanged} />
@@ -37,6 +39,49 @@ export function SettingsView({ onStorageChanged }: { onStorageChanged: () => voi
         </ul>
       </section>
     </div>
+  );
+}
+
+// ------------------------------------------------------------------ aspetto
+
+const THEME_HINT: Record<ThemeChoice, string> = {
+  dark: "Scuro \"studio\", toni caldi, accento ambra.",
+  light: "Chiaro, per ambienti luminosi.",
+  cyber: "Nero e bordeaux, accenti turchese e giallo, pannelli ad angolo tagliato.",
+  system: "Segue l'impostazione chiaro/scuro di Windows.",
+};
+
+function AppearanceSection() {
+  const { choice, setChoice } = useTheme();
+  return (
+    <section aria-labelledby="appearance-title" className="rounded-lg border border-line bg-surface p-4">
+      <h2 id="appearance-title" className="mb-3 font-semibold">
+        Aspetto
+      </h2>
+      <div role="radiogroup" aria-labelledby="appearance-title" className="grid gap-2 sm:grid-cols-2">
+        {(Object.keys(THEME_LABEL) as ThemeChoice[]).map((c) => (
+          <label
+            key={c}
+            className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm ${
+              choice === c ? "border-brand bg-brand/10" : "border-line"
+            }`}
+          >
+            <input
+              type="radio"
+              name="theme"
+              value={c}
+              checked={choice === c}
+              onChange={() => setChoice(c)}
+              className="mt-0.5 accent-[var(--brand)]"
+            />
+            <span>
+              <span className="font-medium">{THEME_LABEL[c]}</span>
+              <span className="block text-xs text-ink-muted">{THEME_HINT[c]}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </section>
   );
 }
 

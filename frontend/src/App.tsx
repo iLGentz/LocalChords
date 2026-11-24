@@ -7,7 +7,7 @@ import { SettingsView } from "@/components/SettingsView";
 import { SongView } from "@/components/SongView";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button, Notice } from "@/components/ui";
-import { useTheme, type ThemeChoice } from "@/hooks/useTheme";
+import { THEME_LABEL, useTheme, type ThemeChoice } from "@/hooks/useTheme";
 import { useHealth, type HealthState } from "@/hooks/useHealth";
 import { useSongs } from "@/hooks/useSongs";
 import type { Song } from "@/lib/api";
@@ -45,8 +45,6 @@ function SystemStatus({ state }: { state: HealthState }) {
     </>
   );
 }
-
-const THEME_LABEL: Record<ThemeChoice, string> = { dark: "Scuro", light: "Chiaro", system: "Sistema" };
 
 function ThemeToggle() {
   const { choice, setChoice } = useTheme();

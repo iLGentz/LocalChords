@@ -94,7 +94,14 @@ test("tema chiaro e pagina impostazioni", async ({ page }) => {
   await expect(page.locator("html")).not.toHaveClass(/dark/);
   await page.getByRole("combobox", { name: /^Tema/ }).selectOption("dark");
   await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.getByRole("combobox", { name: /^Tema/ }).selectOption("cyber");
+  await expect(page.locator("html")).toHaveClass(/cyber/);
+  await expect(page.locator("html")).toHaveClass(/dark/); // il Cyber resta un tema scuro
   await page.getByRole("button", { name: "Impostazioni" }).first().click();
+  // il tema si sceglie anche dalle Impostazioni
+  await page.getByRole("radio", { name: /Chiaro/ }).check();
+  await expect(page.locator("html")).not.toHaveClass(/dark|cyber/);
+  await page.getByRole("radio", { name: /Scuro/ }).check();
   await expect(page.getByRole("heading", { name: "Elaborazione e hardware" })).toBeVisible();
   await expect(page.getByText("Leggero", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Modelli di separazione" })).toBeVisible();

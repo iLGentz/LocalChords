@@ -69,6 +69,47 @@
   --radius: 0.5rem;
 }
 
+/*
+ * Tema "Cyber" (classe .cyber insieme a .dark), dal Cyber UI Kit v0.1: palette esatta
+ * nero #000000, rosso #C6003D, bordeaux #870424, giallo #F3E601, turchese #55EAD4.
+ * Rosso = struttura ed etichette; turchese = selezione, focus, stato attivo e "ok";
+ * giallo = azione principale e avvisi. Angoli vivi; i pannelli principali hanno l'angolo in
+ * basso a destra tagliato a 45° e una barra laterale separata (10 px, distanza 6 px).
+ * Il font Neuromax del kit non è incluso (licenza solo non commerciale): i titoli usano
+ * Bahnschrift, presente in Windows 10/11.
+ * Contrasti (testo normale ≥ 4,5:1): ink/surface 16,6 · ink-muted/surface 10,0 ·
+ * brand/surface 12,7 · warn/surface 14,5 · bad/surface 7,3 · nero su giallo 16,1.
+ * Il rosso del kit (#C6003D) sul fondo arriva a 3,1: resta per bordi e barre; le etichette
+ * usano #FF2E6A (5,3). Gli errori sono rosso-arancio, per distinguerli dalle etichette.
+ */
+.cyber {
+  --ground: #0b0810;
+  --surface: #150f19;
+  --raised: #24101d;
+  --line: #870424;
+  --ink: #f4eff0;
+  --ink-muted: #c8b9c4;
+  --brand: #55ead4;
+  --on-brand: #000000;
+  --ok: #55ead4;
+  --warn: #f3e601;
+  --bad: #ff7a45;
+  --wave: #870424;
+  --wave-played: #c6003d;
+
+  --primary: #f3e601;
+  --primary-foreground: #000000;
+  --radius: 0px;
+
+  --cy-red: #c6003d;
+  --cy-label: #ff2e6a;
+  --cy-burgundy: #870424;
+  --cy-cut: 16px;
+  --cy-rail: 10px;
+  --cy-rail-gap: 6px;
+  --cy-surface: linear-gradient(135deg, rgba(135, 4, 36, 0.3), rgba(18, 10, 21, 0.75) 53%, rgba(1, 6, 14, 0.85));
+}
+
 @theme inline {
   --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --font-heading: var(--font-sans);
@@ -135,6 +176,144 @@
     outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
+}
+
+/* ------------------------------------------------------------------ tema Cyber */
+
+.cyber body {
+  background: linear-gradient(150deg, #541025 0%, #30101e 28%, #18101d 55%, #070b15 100%) fixed;
+}
+
+.cyber h1,
+.cyber h2,
+.cyber h3 {
+  font-family: Bahnschrift, "Arial Narrow", var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Etichetta del pannello: rossa, piccola, spaziata (".panel-label" del kit). */
+.cyber main section h2 {
+  color: var(--cy-label);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+/* Pannello principale: barra separata a sinistra + angolo in basso a destra tagliato a 45°. */
+.cyber main section.rounded-lg.border {
+  position: relative;
+  isolation: isolate;
+  margin-left: calc(var(--cy-rail) + var(--cy-rail-gap));
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+}
+
+.cyber main section.rounded-lg.border::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  pointer-events: none;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+        to top left,
+        transparent 50%,
+        var(--cy-burgundy) 50%,
+        var(--cy-burgundy) calc(50% + 1.5px),
+        transparent calc(50% + 1.5px)
+      )
+      bottom right / var(--cy-cut) var(--cy-cut) no-repeat border-box,
+    var(--cy-surface) padding-box,
+    linear-gradient(#0e0912, #0e0912) padding-box,
+    var(--cy-burgundy) border-box;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - var(--cy-cut)),
+    calc(100% - var(--cy-cut)) 100%,
+    0 100%
+  );
+}
+
+.cyber main section.rounded-lg.border::before {
+  content: "LOCALCHORDS" / "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: calc(-1 * (var(--cy-rail) + var(--cy-rail-gap)) - 1px);
+  width: var(--cy-rail);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(198, 0, 61, 0.8);
+  background: linear-gradient(180deg, rgba(135, 4, 36, 0.96), rgba(65, 4, 28, 0.92));
+  color: #f8d9e3;
+  font: 7px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+}
+
+/* Pannello con un elemento selezionato o in riproduzione: struttura rossa piena. */
+.cyber main section.rounded-lg.border:focus-within::before {
+  background: var(--cy-red);
+}
+
+/* Pulsanti (".btn" del kit): monospazio maiuscolo, angoli vivi. */
+.cyber [data-slot="button"] {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+
+.cyber [data-slot="button"][data-variant="outline"] {
+  border-color: var(--cy-red);
+  background: rgba(135, 4, 36, 0.17);
+  color: var(--ink);
+}
+
+.cyber [data-slot="button"][data-variant="outline"]:hover {
+  border-color: var(--brand);
+  background: rgba(198, 0, 61, 0.18);
+}
+
+.cyber [data-slot="button"][data-variant="default"]:hover {
+  background: #fff057;
+}
+
+.cyber [aria-pressed="true"],
+.cyber [role="tab"][aria-selected="true"] {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.cyber input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.cyber select,
+.cyber textarea {
+  border-radius: 0;
+  border-color: var(--cy-burgundy);
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+.cyber input[type="range"],
+.cyber input[type="checkbox"],
+.cyber input[type="radio"] {
+  accent-color: var(--brand);
+}
+
+.cyber ::selection {
+  background: var(--brand);
+  color: #000000;
+}
+
+.cyber * {
+  scrollbar-color: var(--cy-burgundy) transparent;
 }
 
 .wave-region-label {

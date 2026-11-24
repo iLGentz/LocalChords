@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 
 import { snapToBeat, type LoopState } from "@/audio/engine";
+import { useTheme } from "@/hooks/useTheme";
 import type { SectionInfo, WaveformPeaks } from "@/lib/api";
 
 interface WaveformCanvasProps {
@@ -30,6 +31,7 @@ function cssVar(name: string, fallback: string): string {
 export function WaveformCanvas(props: WaveformCanvasProps) {
   const { peaks, duration, sections, beats, time, loop, snap, onSeek, onLoop } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { resolved: theme } = useTheme();
   const [width, setWidth] = useState(800);
   const [drag, setDrag] = useState<{ from: number; to: number; moved: boolean } | null>(null);
 
@@ -107,7 +109,7 @@ export function WaveformCanvas(props: WaveformCanvasProps) {
     // cursore
     ctx.fillStyle = cssVar("--brand", "#f0a73a");
     ctx.fillRect(played - 1, 0, 2, HEIGHT);
-  }, [width, peaks, duration, sections, time, loop, drag]);
+  }, [width, peaks, duration, sections, time, loop, drag, theme]);
 
   const timeAt = (e: PointerEvent<HTMLCanvasElement>): number => {
     const rect = e.currentTarget.getBoundingClientRect();
