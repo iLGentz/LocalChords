@@ -52,6 +52,7 @@ def detect_beats(f: Features) -> BeatGrid:
     if len(frames) < MIN_BEATS:
         return BeatGrid([], [], [], None, 0.0, BEATS_PER_BAR)
 
+    frames = _fix_offbeat(f, frames)
     times = librosa.frames_to_time(frames, sr=f.sr, hop_length=f.hop)
     ibi = np.diff(times)
     median_ibi = float(np.median(ibi))
@@ -82,6 +83,30 @@ def detect_beats(f: Features) -> BeatGrid:
         bpm_confidence=confidence,
         beats_per_bar=BEATS_PER_BAR,
     )
+
+
+OFFBEAT_RATIO = 1.3
+
+
+def _fix_offbeat(f: Features, frames: np.ndarray) -> np.ndarray:
+    """Corregge l'aggancio ai contrattempi.
+
+    I beat tracker basati sugli onset possono agganciarsi al charleston in levare. Cassa e
+    basso cadono di norma sui battiti: se l'energia nella banda bassa a metà tra un beat e
+    l'altro è nettamente maggiore che sui beat, la griglia viene spostata di mezzo battito.
+    """
+    if len(frames) < 4:
+        return frames
+    low = f.low_onset_env
+    half = np.diff(frames) // 2
+    shifted = frames[:-1] + half
+    on = float(np.mean(low[np.clip(frames, 0, len(low) - 1)]))
+    off = float(np.mean(low[np.clip(shifted, 0, len(low) - 1)]))
+    if off > OFFBEAT_RATIO * on:
+        first = frames[0] - int(np.median(half))
+        lead = [first] if first >= 0 else []
+        return np.asarray(lead + list(shifted), dtype=np.int64)
+    return frames
 
 
 def _downbeat_phase(f: Features, frames: np.ndarray) -> int:

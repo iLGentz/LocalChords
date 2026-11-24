@@ -35,6 +35,7 @@ def run_child(
     should_stop: Callable[[], None],
     cpu_threads: int = 0,
     module: str = "app.separation.runner",
+    path_prepend: list[Path] | None = None,
 ) -> dict[str, Any]:
     """Esegue il runner e restituisce il JSON finale. ``should_stop`` può sollevare
     un'eccezione: il processo figlio viene terminato e l'eccezione propagata."""
@@ -42,6 +43,9 @@ def run_child(
     env["PYTHONIOENCODING"] = "utf-8"
     if cpu_only:
         env["CUDA_VISIBLE_DEVICES"] = ""
+    if path_prepend:
+        # audio-separator cerca ffmpeg nel PATH: l'app lo installa in tools\ffmpeg.
+        env["PATH"] = os.pathsep.join([*(str(p) for p in path_prepend), env.get("PATH", "")])
     if cpu_threads > 0:
         for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS"):
             env[var] = str(cpu_threads)

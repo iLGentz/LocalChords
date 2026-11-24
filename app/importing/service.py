@@ -80,6 +80,17 @@ class SongService:
                     result.setdefault(job.song_id, job)
             return result
 
+    def with_audio(self, song_ids: list[str]) -> set[str]:
+        """Brani che hanno un file audio riproducibile (una sola query per tutto il catalogo)."""
+        if not song_ids:
+            return set()
+        with self.db.read_session() as s:
+            return set(
+                s.scalars(
+                    select(AudioAsset.song_id).where(AudioAsset.song_id.in_(song_ids)).distinct()
+                )
+            )
+
     def audio_asset(self, song_id: str) -> AudioAsset | None:
         """Audio normalizzato se pronto, altrimenti l'originale."""
         with self.db.read_session() as s:

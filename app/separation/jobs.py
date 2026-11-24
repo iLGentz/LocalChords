@@ -66,6 +66,11 @@ class SeparationPlan:
     note: str | None
 
 
+def _ffmpeg_dirs(settings: Settings) -> list[Path]:
+    ffmpeg = settings.resolve_ffmpeg()
+    return [ffmpeg.parent] if ffmpeg is not None else []
+
+
 def runtime_installed() -> bool:
     return importlib.util.find_spec("audio_separator") is not None
 
@@ -164,6 +169,7 @@ def _download(
         cpu_only=True,
         on_progress=lambda f: ctx.progress(start + (end - start) * f),
         should_stop=ctx.check,
+        path_prepend=_ffmpeg_dirs(settings),
     )
     if not is_installed(spec, settings.data_dir):
         raise JobError("model_download_failed", f"Download del modello {spec.label} incompleto.")
@@ -314,6 +320,7 @@ def _separate(
         on_progress=on_progress,
         should_stop=tick,
         cpu_threads=settings.cpu_threads,
+        path_prepend=_ffmpeg_dirs(settings),
     )
     if device is Device.CUDA and not result.get("cuda"):
         log.warning("separazione richiesta su GPU ma eseguita su CPU")

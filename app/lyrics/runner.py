@@ -26,6 +26,23 @@ def _cuda_dlls() -> None:
         pass
 
 
+def _load_16k_mono(path: str) -> Any:
+    """Audio mono a 16 kHz come lo vuole Whisper.
+
+    Lo decodifichiamo noi (soundfile + librosa) invece di lasciarlo a faster-whisper: il suo
+    decoder usa PyAV con un'opzione (``metadata_errors``) rimossa nelle versioni recenti.
+    """
+    import librosa
+    import numpy as np
+    import soundfile as sf
+
+    data, sr = sf.read(path, dtype="float32", always_2d=True)
+    mono = data.mean(axis=1)
+    if sr != 16000:
+        mono = librosa.resample(mono, orig_sr=sr, target_sr=16000)
+    return np.ascontiguousarray(mono, dtype=np.float32)
+
+
 def _progress(fraction: float) -> None:
     sys.stderr.write(f"{min(max(int(fraction * 100), 0), 100)}%|\n")
     sys.stderr.flush()
@@ -51,7 +68,7 @@ def _cmd_transcribe(ns: argparse.Namespace) -> dict[str, Any]:
         local_files_only=True,
     )
     segments, info = model.transcribe(
-        ns.audio,
+        _load_16k_mono(ns.audio),
         language=ns.language or None,
         word_timestamps=True,
         vad_filter=True,

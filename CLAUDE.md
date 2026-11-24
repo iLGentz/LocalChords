@@ -10,7 +10,7 @@ App desktop **solo Windows**, local-first, che trasforma un file audio (e opzion
 
 ## Regole di lavoro
 - Segui le fasi di `PIANO.md` in ordine. Dopo ogni fase riporta cosa funziona e cosa manca.
-- **Test rimandati:** per ora non si scrivono né si eseguono test automatici (la cartella `tests/` è stata rimossa il 24/11/2026). Si faranno sul PC con la RTX 3080 Ti. Restano attivi i controlli statici (mypy, ruff, `tsc`) e il build del frontend.
+- **Test:** dal 24/11/2026 esistono test eseguibili senza GPU (pytest in `tests/`, con `-m slow` per i modelli veri su CPU; Vitest e Playwright in `frontend/`), su audio sintetico. I test che richiedono CUDA si fanno sul PC con la RTX 3080 Ti. Restano attivi i controlli statici (mypy, ruff, `tsc`) e il build del frontend.
 - Non inventare risultati audio. Se un modello o una libreria non funziona, dichiaralo e proponi un'alternativa.
 - Scelte tecniche reversibili: decidi, motiva e documenta in `docs/DECISIONI.md`. Chiedi conferma solo per azioni distruttive o cambi di stack.
 - Codice tipizzato (mypy/pyright strict, TypeScript strict), modulare e leggibile.

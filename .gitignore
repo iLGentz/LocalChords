@@ -34,3 +34,7 @@ graphify-codice/graphify-out/*
 !graphify-codice/graphify-out/graph.json
 !graphify-codice/graphify-out/graph_grezzo.json
 !graphify-codice/graphify-out/verifica_filtro.json
+# Dati dei test lenti (modelli scaricati, audio di prova)
+tests/.slowdata/
+frontend/test-results/
+frontend/playwright-report/

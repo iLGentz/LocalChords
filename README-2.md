@@ -11,9 +11,11 @@ Tutto gira sul tuo PC: nessun account, nessun servizio cloud obbligatorio.
 > loop e metronomo, trasposizione, capo, semplificazione, notazioni, diagrammi, tab e interfaccia
 > completa (tema scuro e chiaro, 3 colonne) ed export. Resta la verifica end-to-end (fase 10).
 >
-> I test automatici sono rimandati: verranno scritti ed eseguiti sul PC di test con GPU
-> NVIDIA. Il codice delle fasi 2-9 è stato controllato solo staticamente (mypy, ruff, tsc):
-> nessun brano è ancora stato importato, analizzato, separato, trascritto o riprodotto.
+> Test eseguiti il 24/11/2026 su un PC **senza GPU** (CPU Intel, 16 GB): 58 test pytest
+> (anche separazione htdemucs_6s, tab con Basic Pitch e Whisper small, tutti su CPU),
+> 13 test Vitest e 6 test end-to-end Playwright su brani sintetici. Restano da verificare sul
+> PC con GPU NVIDIA: separazione BS-RoFormer su CUDA, Whisper su GPU, profilo Massima qualità
+> e brani reali.
 
 ## Prerequisiti
 
@@ -241,7 +243,18 @@ cd frontend; npm run dev                           # interfaccia con hot reload 
 
 Il server di sviluppo Vite inoltra `/api` alla porta 8765.
 
-Controlli (i test automatici sono rimandati alla verifica sul PC di test con GPU NVIDIA):
+Test (audio sintetico generato al volo, nessuna canzone inclusa):
+
+```powershell
+uv run --extra cpu python -m pytest -m "not slow"    # veloci, circa 1 minuto
+uv run --extra cpu python -m pytest -m slow          # modelli veri su CPU: scarica htdemucs_6s, Whisper small, Basic Pitch (~0,5 GB in tests\.slowdata)
+cd frontend; npm test                                # Vitest: trasposizione, capo, notazioni, diagrammi
+```
+
+Test end-to-end dell'interfaccia (Playwright con Microsoft Edge): avvia l'app con almeno un
+brano analizzato, poi `cd frontend; $env:E2E_URL = "http://127.0.0.1:8765"; npx playwright test`.
+
+Controlli statici:
 
 ```powershell
 uv run --extra cpu python -m mypy                    # tipi (strict)
@@ -365,9 +378,9 @@ Guida per chi inizia, scritta a partire dal grafo: [README-FROM-GRAPH.md](README
 
 ## Limiti noti
 
-- **Nessun test automatico** nel repository: rimandati alla verifica sul PC con GPU NVIDIA.
-  Dalla fase 2 in poi il codice è stato controllato solo staticamente; nessun brano reale è
-  ancora stato elaborato da capo a fondo.
+- **Test solo su CPU e audio sintetico**: separazione su CUDA (BS-RoFormer), Whisper su GPU
+  e il profilo Massima qualità non sono ancora stati provati; nessun brano reale è stato
+  elaborato da capo a fondo.
 - **Accordi**: il backend attuale (chroma + HMM) è il fallback del piano; BTC non è ancora
   integrato. Accuratezza attesa sotto il 65-80% stimato per i modelli neurali: va misurata.
 - **Beat e sezioni**: librosa; Beat This! e SongFormer non sono integrati. Metro 4/4 presunto.

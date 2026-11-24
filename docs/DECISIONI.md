@@ -489,3 +489,27 @@ dell'app e senza installazioni di sistema.
 - Alias `@/` già configurato per l'aggiunta di shadcn/ui nella fase 8.
 - `httpx2` al posto di `httpx` per il `TestClient`: Starlette 1.x segnala `httpx` come
   deprecato.
+
+## Test senza GPU (24/11/2026)
+
+### Audio sintetico al posto di brani reali
+Il repository non contiene canzoni: `tests/synth.py` genera al volo una progressione con
+accordi, basso, cassa e charleston noti (risultato atteso conosciuto) e una voce con la sintesi
+vocale di Windows per Whisper. I test con i modelli veri sono marcati `slow` e tengono i modelli
+in `tests/.slowdata` (ignorata da git) per non riscaricarli.
+
+### Correzioni nate dai test
+- **Beat sul contrattempo**: il beat tracker di librosa si agganciava al charleston in levare
+  (downbeat sbagliati di mezzo battito). `beats._fix_offbeat` confronta l'energia nella banda
+  bassa sui beat e a metà tra un beat e l'altro e, se il levare è nettamente più forte (×1,3),
+  sposta la griglia di mezzo battito.
+- **FFmpeg nella separazione**: audio-separator cerca `ffmpeg` nel PATH e falliva con
+  `WinError 2`. Il processo figlio riceve ora `tools\ffmpeg\bin` in testa al PATH.
+- **Decodifica per Whisper**: il decoder di faster-whisper (PyAV) usa un'opzione rimossa
+  (`metadata_errors`). Il runner decodifica l'audio da solo (soundfile + librosa, mono 16 kHz).
+- **Catalogo senza `audio_url`**: l'elenco dei brani non indicava l'audio e il player non si
+  attivava aprendo un brano dal catalogo. Ora una sola query segna i brani con audio.
+
+### Playwright con Edge di sistema
+I test end-to-end usano `channel: "msedge"`, già presente in Windows (lo stesso motore di
+WebView2 usato dall'app): nessun browser da scaricare.

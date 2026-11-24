@@ -77,8 +77,11 @@ def list_songs(
     limit: Annotated[int, Query(ge=1, le=1000)] = 200,
 ) -> list[SongOut]:
     items = songs.list_songs(q, limit)
-    jobs = songs.latest_jobs([s.id for s in items])
-    return [SongOut.from_song(s, jobs.get(s.id)) for s in items]
+    ids = [s.id for s in items]
+    jobs = songs.latest_jobs(ids)
+    # L'interfaccia apre i brani dai dati del catalogo: senza audio_url non avrebbe il player.
+    audio = songs.with_audio(ids)
+    return [SongOut.from_song(s, jobs.get(s.id), has_audio=s.id in audio) for s in items]
 
 
 # --------------------------------------------------------------- upload file

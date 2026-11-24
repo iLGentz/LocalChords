@@ -2,8 +2,9 @@
 
 > Guida scritta a partire dal grafo del progetto (`graphify-out/GRAPH_REPORT.md`) e
 > verificata su `setup.ps1`, `LocalChords.bat`, `pyproject.toml`, `app/config.py` e sulle API.
-> I punti marcati **⚠ Da verificare** non sono ancora stati provati da capo a fondo: finora
-> nessun brano reale è stato elaborato con questa versione.
+> I punti marcati **⚠ Da verificare** non sono ancora stati provati da capo a fondo. Il
+> 24/11/2026 l'app è stata provata su un PC senza GPU con brani sintetici (accordi e voce
+> generati al volo), non con brani reali.
 
 ## A cosa serve
 
@@ -108,7 +109,8 @@ Esempio concreto: hai un MP3 in `C:\Musica\brano.mp3` e vuoi gli accordi da suon
 > - qualità di accordi, beat e sezioni;
 > - comportamento del trascinamento dei file nella finestra.
 >
-> Il metodo di analisi attuale (profilo "Leggero", librosa) non è ancora stato misurato.
+> Su un brano sintetico (C-G-Am-F a 120 BPM) l'analisi ha riconosciuto il 99% degli accordi,
+> la tonalità e il BPM; su musica reale la qualità sarà più bassa e va misurata.
 
 ### La stessa cosa da riga di comando
 
@@ -133,13 +135,15 @@ $start = Invoke-RestMethod -Method Post -Uri "$api/songs/upload/$($up.upload_id)
 Invoke-RestMethod "$api/songs/$($start.song.id)" | Select-Object status, key, bpm
 
 # 4. Leggi i primi accordi
-Invoke-RestMethod "$api/songs/$($start.song.id)/chords" |
+(Invoke-RestMethod "$api/songs/$($start.song.id)/chords") |
   Select-Object -First 8 start_s, chord
 ```
 
-> **⚠ Da verificare:** questa sequenza segue gli endpoint del codice
-> (`app/api/routers/songs.py`, `analysis.py`) ma non è stata eseguita su un file reale.
-> Con PowerShell 5.1, titoli con lettere accentate potrebbero arrivare codificati male nel
+> **Provato il 24/11/2026** con un brano sintetico di 25 s: stato `ready`, tonalità C,
+> BPM 117,5, accordi C, G, Am, F. Le parentesi attorno a `Invoke-RestMethod` al punto 4 servono:
+> con PowerShell 5.1, senza, la tabella degli accordi resta vuota.
+>
+> **⚠ Da verificare:** con PowerShell 5.1, titoli con lettere accentate potrebbero arrivare codificati male nel
 > corpo JSON.
 
 ## Andare oltre
@@ -152,9 +156,10 @@ Invoke-RestMethod "$api/songs/$($start.song.id)/chords" |
 | esportare | colonna destra → **Esporta** |
 | liberare spazio | **Impostazioni → Spazio su disco** |
 
-> **⚠ Da verificare:** separazione su GPU NVIDIA, trascrizione con Whisper, tab, export audio
-> e download dei file nella cartella Download. Sono implementati ma non ancora provati su brani
-> reali.
+> **⚠ Da verificare:** separazione su GPU NVIDIA e qualità su brani reali. Su CPU sono stati
+> provati con audio sintetico: separazione htdemucs_6s (16 s di audio in circa 23 s), tab dal
+> basso, trascrizione Whisper small e allineamento del testo, export TXT/ChordPro/PDF/WAV/MP3
+> e download dal browser.
 
 ## Componenti principali
 
