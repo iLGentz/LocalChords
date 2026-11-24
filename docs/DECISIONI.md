@@ -10,6 +10,42 @@ fase 1 è stato verificato con quei test prima della rimozione; dalla fase 2 in 
 controlli sono solo statici (mypy strict, ruff, `tsc`, build) finché non si riprendono.
 La configurazione di pytest in `pyproject.toml` resta pronta.
 
+## Fase 8 — interfaccia (24/11/2026)
+
+### shadcn/ui
+Inizializzato con la CLI (`shadcn` 4.23, preset "nova", base Radix, Vite + Tailwind v4).
+Modifiche alla configurazione generata:
+- `cn` importato da un pacchetto npm chiamato `cn` (non verificato): sostituito con
+  l'implementazione standard di shadcn (`clsx` + `tailwind-merge`) in `src/lib/utils.ts`;
+- font Geist rimosso: resta Segoe UI Variable / Cascadia Mono, già in Windows;
+- `shadcn` spostato tra le dipendenze di sviluppo (serve solo `shadcn/tailwind.css` al build);
+- `tsconfig.json` principale con `paths` (la CLI legge lì gli alias; niente `baseUrl`,
+  rimosso in TypeScript 7).
+Il `Button` dell'app è un adattatore sopra quello di shadcn (stessa API per i componenti
+esistenti). Gli altri controlli (select, slider, checkbox) restano nativi: sono già
+accessibili da tastiera e lettori di schermo; si potranno sostituire con i componenti
+shadcn/Radix senza cambiare il resto.
+
+### Palette e temi
+Token della palette (`--ground`, `--surface`, `--raised`, `--line`, `--ink`, `--ink-muted`,
+`--brand`, `--on-brand`, `--ok`, `--warn`, `--bad`, `--wave`, `--wave-played`) in `:root`
+(chiaro) e `.dark` (scuro, predefinito), mappati sui token di shadcn. L'accento ambra si
+chiama ora `brand`, perché in shadcn `accent` è lo sfondo degli elementi in hover. Il testo
+su sfondo ambra usa `on-brand` (scuro nel tema scuro, bianco nel chiaro). Contrasti calcolati
+e annotati in `index.css` (tutti ≥ 4,5:1). Canvas e SVG leggono le variabili della palette
+direttamente (con `@theme inline` le `--color-*` non esistono a runtime). Scelta del tema in
+`localStorage` (preferenza per singolo PC), applicata prima del primo render.
+
+### Impaginazione
+Tre colonne come nel brief: la colonna destra è dentro la scheda del brano
+(`grid-cols-[1fr_22rem]`, sticky); le sezioni del brano compaiono nella colonna sinistra con
+un portal. Larghezza minima 1280 px, come da piano (niente layout mobile).
+
+### Accessibilità
+Collegamento "Vai al contenuto", `main` focalizzabile, landmark (`header`, `nav`, `main`,
+`aside`, `search`), nomi accessibili per i pulsanti con solo un simbolo, niente testo grigio
+a opacità ridotta, `prefers-reduced-motion` rispettato.
+
 ## Fase 7 — trasposizione, capo, semplificazione, diagrammi, tab (24/11/2026)
 
 ### Basic Pitch senza TensorFlow

@@ -82,12 +82,12 @@ export function ChordSheet(props: ChordSheetProps) {
       {selectedView.original && <span>originale: <span className="font-mono">{selectedView.original}</span></span>}
       {selectedView.simplifiedReason && <span>· {selectedView.simplifiedReason}</span>}
       {selectedView.simplifiedReason && (
-        <button type="button" className="rounded px-1.5 py-0.5 text-accent hover:bg-raised" onClick={() => onExempt(selected, true)}>
+        <button type="button" className="rounded px-1.5 py-0.5 text-brand hover:bg-raised" onClick={() => onExempt(selected, true)}>
           Ripristina questo accordo
         </button>
       )}
       {selected.simplify_exempt && (
-        <button type="button" className="rounded px-1.5 py-0.5 text-accent hover:bg-raised" onClick={() => onExempt(selected, false)}>
+        <button type="button" className="rounded px-1.5 py-0.5 text-brand hover:bg-raised" onClick={() => onExempt(selected, false)}>
           Semplifica di nuovo
         </button>
       )}
@@ -131,14 +131,14 @@ export function ChordSheet(props: ChordSheetProps) {
             <div
               role="listitem"
               className={`flex min-w-0 items-center gap-1 border-l px-2 ${compact ? "h-9 w-1/8" : "h-14 w-1/4"} ${
-                activeBar ? "border-accent bg-accent/10" : "border-line"
+                activeBar ? "border-brand bg-brand/10" : "border-line"
               }`}
             >
               {bar.carried && visible(bar.carried) && (
                 <button
                   type="button"
                   onClick={(e) => (e.shiftKey ? onLoop(bar.start, bar.end) : onSeek(bar.start))}
-                  className="truncate font-mono text-sm text-ink-muted/60 hover:text-ink-muted"
+                  className="truncate font-mono text-sm italic text-ink-muted hover:text-ink"
                   title="Prosegue dalla battuta precedente"
                 >
                   {display(bar.carried)?.label ?? bar.carried.chord}
@@ -186,9 +186,9 @@ function ChordChip({
       ]
         .filter(Boolean)
         .join(" · ")}
-      className={`flex flex-col items-start truncate rounded px-1.5 py-0.5 font-mono text-sm font-semibold leading-tight transition-colors ${simplified ? "outline-dashed outline-1 outline-accent/60" : ""} ${
+      className={`flex flex-col items-start truncate rounded px-1.5 py-0.5 font-mono text-sm font-semibold leading-tight transition-colors ${simplified ? "outline-dashed outline-1 outline-brand/60" : ""} ${
         active
-          ? "bg-accent text-ground"
+          ? "bg-brand text-on-brand"
           : lowConfidence
             ? "text-ink underline decoration-warn/70 decoration-dotted underline-offset-4 hover:bg-raised"
             : "text-ink hover:bg-raised"
@@ -196,7 +196,7 @@ function ChordChip({
     >
       <span>{label}</span>
       {!compact && view?.original && (
-        <span className={`text-[10px] font-normal ${active ? "text-ground/80" : "text-ink-muted"}`}>{view.original}</span>
+        <span className={`text-[10px] font-normal ${active ? "text-on-brand/80" : "text-ink-muted"}`}>{view.original}</span>
       )}
     </button>
   );

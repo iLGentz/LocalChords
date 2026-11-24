@@ -245,7 +245,7 @@ function DropZone({ onFile }: { onFile: (file: File) => void }) {
       onDragLeave={() => setOver(false)}
       onDrop={onDrop}
       className={`flex flex-col items-center gap-3 rounded-lg border-2 border-dashed px-6 py-14 text-center transition-colors ${
-        over ? "border-accent bg-accent/5" : "border-line bg-surface"
+        over ? "border-brand bg-brand/5" : "border-line bg-surface"
       }`}
     >
       <p className="text-base font-medium">Trascina qui un file audio</p>
@@ -309,7 +309,7 @@ function UrlForm({
           value={url}
           placeholder="https://www.youtube.com/watch?v=…"
           onChange={(e) => setUrl(e.target.value)}
-          className="min-w-0 flex-1 rounded-md border border-line bg-ground px-2.5 py-1.5 text-sm focus:border-accent focus:outline-none"
+          className="min-w-0 flex-1 rounded-md border border-line bg-ground px-2.5 py-1.5 text-sm focus:border-brand focus:outline-none"
         />
         <Button type="submit" variant="secondary" disabled={busy || !url.trim()}>
           {busy ? "Verifica…" : "Anteprima"}

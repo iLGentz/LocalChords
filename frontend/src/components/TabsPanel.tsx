@@ -188,7 +188,7 @@ export function TabsPanel({ song, downbeats, duration, transpose, capo, time, on
                 <pre
                   key={row.start}
                   onClick={() => onSeek(row.start)}
-                  className={`mb-2 cursor-pointer rounded px-2 py-1 font-mono text-xs leading-tight ${active ? "bg-accent/10 text-ink" : "text-ink-muted hover:bg-raised"}`}
+                  className={`mb-2 cursor-pointer rounded px-2 py-1 font-mono text-xs leading-tight ${active ? "bg-brand/10 text-ink" : "text-ink-muted hover:bg-raised"}`}
                 >
                   {row.text}
                 </pre>

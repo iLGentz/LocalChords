@@ -43,7 +43,7 @@ export function SongView({ song, onChanged, onDeleted }: SongViewProps) {
     });
 
   return (
-    <article className="mx-auto flex w-full max-w-3xl flex-col gap-5" aria-labelledby="song-title">
+    <article className="flex w-full flex-col gap-5" aria-labelledby="song-title">
       {editing ? (
         <MetadataForm
           song={song}

@@ -42,7 +42,7 @@ export function MixerPanel({ player, selected, onSelect, hasStems }: MixerPanelP
         {snap.tracks.map((t, i) => (
           <li
             key={t.id}
-            className={`grid grid-cols-[7rem_auto_auto_1fr_5rem] items-center gap-2 rounded-md px-2 py-1 ${selected === t.id ? "bg-raised" : ""}`}
+            className={`grid grid-cols-[5.5rem_auto_auto_minmax(0,1fr)_2.5rem] items-center gap-2 rounded-md px-2 py-1 ${selected === t.id ? "bg-raised" : ""}`}
           >
             <button
               type="button"
@@ -67,7 +67,7 @@ export function MixerPanel({ player, selected, onSelect, hasStems }: MixerPanelP
               type="button"
               aria-pressed={t.solo}
               onClick={() => engine.setTrack(t.id, { solo: !t.solo })}
-              className={`w-7 rounded border text-xs font-semibold ${t.solo ? "border-accent bg-accent/20 text-accent" : "border-line text-ink-muted"}`}
+              className={`w-7 rounded border text-xs font-semibold ${t.solo ? "border-brand bg-brand/20 text-brand" : "border-line text-ink-muted"}`}
               aria-label={`Solo ${t.label}`}
             >
               S
@@ -80,7 +80,7 @@ export function MixerPanel({ player, selected, onSelect, hasStems }: MixerPanelP
               value={t.volume}
               aria-label={`Volume ${t.label}`}
               onChange={(e) => engine.setTrack(t.id, { volume: Number(e.target.value) })}
-              className="accent-[var(--color-accent)]"
+              className="accent-[var(--brand)]"
             />
             <div className="flex items-center gap-1.5" aria-hidden="true">
               <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-raised">

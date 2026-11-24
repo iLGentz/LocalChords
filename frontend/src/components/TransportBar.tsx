@@ -54,13 +54,13 @@ export function TransportBar({ player, time, beats, snap, onSnapChange, hasBpm }
           >
             {loading ? `${Math.round(s.loadProgress * 100)}%` : playing ? "❚❚ Pausa" : "▶ Play"}
           </Button>
-          <Button variant="ghost" onClick={() => engine.stop()} disabled={loading} title="Stop">
+          <Button variant="ghost" onClick={() => engine.stop()} disabled={loading} title="Stop" aria-label="Stop">
             ■
           </Button>
           <span className="w-28 font-mono text-sm tabular-nums" aria-live="off">
             {fmt(time)} <span className="text-ink-muted">/ {formatDuration(s.duration)}</span>
           </span>
-          {s.countingIn && <span className="font-semibold text-accent">Count-in…</span>}
+          {s.countingIn && <span className="font-semibold text-brand">Count-in…</span>}
         </div>
 
         <label className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export function TransportBar({ player, time, beats, snap, onSnapChange, hasBpm }
             step={0.05}
             value={s.rate}
             onChange={(e) => engine.setRate(Number(e.target.value))}
-            className="w-24 accent-[var(--color-accent)]"
+            className="w-24 accent-[var(--brand)]"
           />
           <button type="button" className="w-12 font-mono" title="Torna a 1×" onClick={() => engine.setRate(1)}>
             {s.rate.toFixed(2)}×
@@ -95,7 +95,7 @@ export function TransportBar({ player, time, beats, snap, onSnapChange, hasBpm }
         <div className="flex items-center gap-1">
           <Button
             variant={loop?.enabled ? "secondary" : "ghost"}
-            className={`px-2 py-0.5 ${loop?.enabled ? "border-accent text-accent" : ""}`}
+            className={`px-2 py-0.5 ${loop?.enabled ? "border-brand text-brand" : ""}`}
             disabled={!loop}
             aria-pressed={loop?.enabled ?? false}
             aria-keyshortcuts="L"
@@ -120,7 +120,7 @@ export function TransportBar({ player, time, beats, snap, onSnapChange, hasBpm }
             </Button>
           )}
           <label className="ml-1 flex items-center gap-1 text-ink-muted" title="Aggancia A e B al beat più vicino">
-            <input type="checkbox" checked={snap} onChange={(e) => onSnapChange(e.target.checked)} className="accent-[var(--color-accent)]" />
+            <input type="checkbox" checked={snap} onChange={(e) => onSnapChange(e.target.checked)} className="accent-[var(--brand)]" />
             snap
           </label>
         </div>
@@ -132,7 +132,7 @@ export function TransportBar({ player, time, beats, snap, onSnapChange, hasBpm }
               checked={s.metronome.enabled}
               disabled={!hasBpm}
               onChange={(e) => engine.setMetronome({ enabled: e.target.checked })}
-              className="accent-[var(--color-accent)]"
+              className="accent-[var(--brand)]"
             />
             Metronomo
           </label>
@@ -144,7 +144,7 @@ export function TransportBar({ player, time, beats, snap, onSnapChange, hasBpm }
             value={s.metronome.volume}
             aria-label="Volume del metronomo"
             onChange={(e) => engine.setMetronome({ volume: Number(e.target.value) })}
-            className="w-16 accent-[var(--color-accent)]"
+            className="w-16 accent-[var(--brand)]"
           />
           <label className="flex items-center gap-1">
             <span className="text-ink-muted">Count-in</span>
@@ -171,7 +171,7 @@ export function TransportBar({ player, time, beats, snap, onSnapChange, hasBpm }
             step={0.01}
             value={s.masterVolume}
             onChange={(e) => engine.setMasterVolume(Number(e.target.value))}
-            className="w-20 accent-[var(--color-accent)]"
+            className="w-20 accent-[var(--brand)]"
           />
           <span
             role="status"

@@ -118,7 +118,7 @@ function ProcessingSection() {
               {(Object.keys(DEVICE_LABEL) as DeviceChoice[]).map((d) => (
                 <label
                   key={d}
-                  className={`cursor-pointer rounded-md border px-3 py-1.5 ${prefs.device === d ? "border-accent bg-accent/10" : "border-line"}`}
+                  className={`cursor-pointer rounded-md border px-3 py-1.5 ${prefs.device === d ? "border-brand bg-brand/10" : "border-line"}`}
                 >
                   <input
                     type="radio"
@@ -171,7 +171,7 @@ function ProcessingSection() {
               type="checkbox"
               checked={prefs.auto_separate}
               onChange={(e) => void update({ ...prefs, auto_separate: e.target.checked })}
-              className="size-4 accent-[var(--color-accent)]"
+              className="size-4 accent-[var(--brand)]"
             />
             Separa automaticamente in stem dopo l'importazione (se il modello è scaricato)
           </label>
@@ -196,7 +196,7 @@ function ProfileOption(props: {
 }) {
   return (
     <label
-      className={`flex cursor-pointer flex-col rounded-md border px-3 py-2 ${props.checked ? "border-accent bg-accent/10" : "border-line"} ${props.available ? "" : "cursor-not-allowed opacity-60"}`}
+      className={`flex cursor-pointer flex-col rounded-md border px-3 py-2 ${props.checked ? "border-brand bg-brand/10" : "border-line"} ${props.available ? "" : "cursor-not-allowed opacity-60"}`}
     >
       <span className="flex items-center gap-2">
         <input
@@ -205,7 +205,7 @@ function ProfileOption(props: {
           checked={props.checked}
           disabled={!props.available}
           onChange={props.onSelect}
-          className="accent-[var(--color-accent)]"
+          className="accent-[var(--brand)]"
         />
         {props.label}
       </span>

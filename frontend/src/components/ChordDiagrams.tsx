@@ -34,7 +34,7 @@ export function ChordDiagrams({ shapes, instrument, activeShape }: ChordDiagrams
         return (
           <li
             key={shape}
-            className={`flex w-28 flex-col items-center rounded-md border px-2 pb-2 pt-1 ${active ? "border-accent bg-accent/10" : "border-line"}`}
+            className={`flex w-28 flex-col items-center rounded-md border px-2 pb-2 pt-1 ${active ? "border-brand bg-brand/10" : "border-line"}`}
           >
             <span className="font-mono text-sm font-semibold">{label}</span>
             {instrument === "piano" ? (
@@ -68,17 +68,17 @@ function FretDiagram({ position, strings, label }: { position: Position; strings
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} role="img" aria-label={`${label}: ${description}`}>
       {position.baseFret === 1 ? (
-        <rect x={left} y={top - 3} width={w - left * 2} height={3} fill="var(--color-ink)" />
+        <rect x={left} y={top - 3} width={w - left * 2} height={3} fill="var(--ink)" />
       ) : (
-        <text x={1} y={y(0.6)} fontSize={9} fill="var(--color-ink-muted)">
+        <text x={1} y={y(0.6)} fontSize={9} fill="var(--ink-muted)">
           {position.baseFret}
         </text>
       )}
       {Array.from({ length: frets + 1 }, (_, f) => (
-        <line key={`f${f}`} x1={left} x2={w - left} y1={y(f)} y2={y(f)} stroke="var(--color-line)" />
+        <line key={`f${f}`} x1={left} x2={w - left} y1={y(f)} y2={y(f)} stroke="var(--line)" />
       ))}
       {Array.from({ length: strings }, (_, s) => (
-        <line key={`s${s}`} x1={x(s)} x2={x(s)} y1={top} y2={y(frets)} stroke="var(--color-ink-muted)" strokeWidth={0.8} />
+        <line key={`s${s}`} x1={x(s)} x2={x(s)} y1={top} y2={y(frets)} stroke="var(--ink-muted)" strokeWidth={0.8} />
       ))}
       {position.barres.map((b) => {
         const covered = position.frets.map((f, s) => (f === b ? s : -1)).filter((s) => s >= 0);
@@ -91,22 +91,22 @@ function FretDiagram({ position, strings, label }: { position: Position; strings
             width={x(Math.max(...covered)) - x(Math.min(...covered)) + 8}
             height={8}
             rx={4}
-            fill="var(--color-accent)"
+            fill="var(--brand)"
           />
         );
       })}
       {position.frets.map((f, s) =>
         f < 0 ? (
-          <text key={`m${s}`} x={x(s)} y={top - 6} fontSize={8} textAnchor="middle" fill="var(--color-ink-muted)">
+          <text key={`m${s}`} x={x(s)} y={top - 6} fontSize={8} textAnchor="middle" fill="var(--ink-muted)">
             ×
           </text>
         ) : f === 0 ? (
-          <circle key={`o${s}`} cx={x(s)} cy={top - 8} r={2.5} fill="none" stroke="var(--color-ink-muted)" />
+          <circle key={`o${s}`} cx={x(s)} cy={top - 8} r={2.5} fill="none" stroke="var(--ink-muted)" />
         ) : (
           <g key={`d${s}`}>
-            <circle cx={x(s)} cy={y(f - 0.5)} r={4.5} fill="var(--color-accent)" />
+            <circle cx={x(s)} cy={y(f - 0.5)} r={4.5} fill="var(--brand)" />
             {(position.fingers[s] ?? 0) > 0 && (
-              <text x={x(s)} y={y(f - 0.5) + 3} fontSize={7} textAnchor="middle" fill="var(--color-ground)" fontWeight={700}>
+              <text x={x(s)} y={y(f - 0.5) + 3} fontSize={7} textAnchor="middle" fill="var(--on-brand)" fontWeight={700}>
                 {position.fingers[s]}
               </text>
             )}
@@ -137,7 +137,7 @@ function PianoDiagram({ notes, label }: { notes: number[]; label: string }) {
             y={0}
             width={keyW}
             height={h}
-            fill={on.has(pc) && (oct === 0 ? pc === bass : pc !== bass || notes.length === 1) ? "var(--color-accent)" : "#ece7e0"}
+            fill={on.has(pc) && (oct === 0 ? pc === bass : pc !== bass || notes.length === 1) ? "var(--brand)" : "#ece7e0"}
             stroke="#3a3631"
           />
         )),
@@ -150,7 +150,7 @@ function PianoDiagram({ notes, label }: { notes: number[]; label: string }) {
             y={0}
             width={keyW * 0.6}
             height={h * 0.6}
-            fill={on.has(pc) && (oct === 0 ? pc === bass : pc !== bass || notes.length === 1) ? "var(--color-accent)" : "#1c1a18"}
+            fill={on.has(pc) && (oct === 0 ? pc === bass : pc !== bass || notes.length === 1) ? "var(--brand)" : "#1c1a18"}
           />
         )),
       )}

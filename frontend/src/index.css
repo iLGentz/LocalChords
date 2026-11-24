@@ -1,50 +1,157 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Tema "studio": antracite caldo, superfici leggermente elevate, accento ambra. */
-@theme {
+/*
+ * Palette LocalChords. Tema scuro "studio" (predefinito, classe .dark su <html>) e tema chiaro.
+ * Contrasti verificati (WCAG AA, testo normale ≥ 4,5:1):
+ *   scuro  ink-muted/surface 6,2 · brand/surface 7,9 · on-brand/brand 8,8
+ *   chiaro ink-muted/surface 7,0 · brand/surface 5,4 · on-brand/brand 5,6 · ok 4,9 · warn 5,2 · bad 6,0
+ * I token di shadcn/ui (--background, --primary, ...) sono mappati sulla palette.
+ * "brand" è l'accento ambra; "accent" resta a shadcn (sfondo degli elementi in hover).
+ */
+:root {
+  color-scheme: light;
+  --ground: #f4f1ec;
+  --surface: #fcfaf6;
+  --raised: #ebe5dc;
+  --line: #d6cdc1;
+  --ink: #1f1b16;
+  --ink-muted: #5c5349;
+  --brand: #9a5700;
+  --on-brand: #ffffff;
+  --ok: #2f7d4b;
+  --warn: #8a6100;
+  --bad: #b3372b;
+  --wave: #b8ada0;
+  --wave-played: #5c5349;
+}
+
+.dark {
+  color-scheme: dark;
+  --ground: #1c1a18;
+  --surface: #24221f;
+  --raised: #2d2a26;
+  --line: #3a3631;
+  --ink: #ece7e0;
+  --ink-muted: #a8a097;
+  --brand: #f0a73a;
+  --on-brand: #1c1a18;
+  --ok: #6cc08b;
+  --warn: #e6b44c;
+  --bad: #e8776b;
+  --wave: #5b554e;
+  --wave-played: #b9b1a6;
+}
+
+:root,
+.dark {
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --secondary: var(--raised);
+  --secondary-foreground: var(--ink);
+  --muted: var(--raised);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--raised);
+  --accent-foreground: var(--ink);
+  --destructive: var(--bad);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--brand);
+  --radius: 0.5rem;
+}
+
+@theme inline {
   --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-heading: var(--font-sans);
   --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, monospace;
 
-  --color-ground: #1c1a18;
-  --color-surface: #24221f;
-  --color-raised: #2d2a26;
-  --color-line: #3a3631;
-  --color-ink: #ece7e0;
-  --color-ink-muted: #a8a097;
-  --color-accent: #f0a73a;
-  --color-ok: #6cc08b;
-  --color-warn: #e6b44c;
-  --color-bad: #e8776b;
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
 }
 
-:root {
-  color-scheme: dark;
-}
-
-html,
-body,
-#root {
-  height: 100%;
-}
-
-body {
-  margin: 0;
-  background: var(--color-ground);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    margin: 0;
+    @apply bg-background text-foreground antialiased;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
 }
 
 .wave-region-label {
   display: inline-block;
   margin: 2px 4px;
   font-size: 11px;
-  color: var(--color-ink-muted);
+  color: var(--ink-muted);
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+/* Animazioni brevi e funzionali; nessuna se l'utente le ha ridotte nel sistema. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

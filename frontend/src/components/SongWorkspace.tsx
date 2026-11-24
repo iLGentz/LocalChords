@@ -8,6 +8,7 @@ import { MixerPanel } from "@/components/MixerPanel";
 import { PracticeControls, type PracticeView } from "@/components/PracticeControls";
 import { StemsPanel, STEM_LABEL } from "@/components/StemsPanel";
 import { TabsPanel } from "@/components/TabsPanel";
+import { SectionsNav } from "@/components/SectionsNav";
 import { TransportBar } from "@/components/TransportBar";
 import { Notice } from "@/components/ui";
 import { useAnalysis } from "@/hooks/useAnalysis";
@@ -88,7 +89,8 @@ export function SongWorkspace({ song, busy, onChanged, onReanalyze }: SongWorksp
     [view.transpose, view.capo, view.simplification, view.notation, analysis?.key],
   );
   const display = useCallback(
-    (c: ChordEvent): DisplayedChord | null => (c.chord === "N" ? null : displayChord(c.chord, settings, c.simplify_exempt)),
+    (c: ChordEvent): DisplayedChord | null =>
+      c.chord === "N" ? null : displayChord(c.chord, settings, c.simplify_exempt),
     [settings],
   );
   const chordLabel = useCallback((c: ChordEvent) => display(c)?.label ?? c.chord, [display]);
@@ -99,7 +101,11 @@ export function SongWorkspace({ song, busy, onChanged, onReanalyze }: SongWorksp
     const totals = new Map<string, number>();
     for (const c of analysis.chords) {
       if (c.chord === "N") continue;
-      const d = displayChord(c.chord, { ...settings, capo: 0, notation: "american" }, c.simplify_exempt);
+      const d = displayChord(
+        c.chord,
+        { ...settings, capo: 0, notation: "american" },
+        c.simplify_exempt,
+      );
       if (d) totals.set(d.shape, (totals.get(d.shape) ?? 0) + (c.end_s - c.start_s));
     }
     return [...totals].map(([symbol, duration]) => ({ symbol, duration }));
@@ -128,7 +134,8 @@ export function SongWorkspace({ song, busy, onChanged, onReanalyze }: SongWorksp
   const tracks = useMemo<TrackSpec[]>(() => {
     if (stems === null) return [];
     const ready = stems.filter((s) => s.status === "ready");
-    if (ready.length === 6) return ready.map((s) => ({ id: s.type, label: STEM_LABEL[s.type], url: s.url }));
+    if (ready.length === 6)
+      return ready.map((s) => ({ id: s.type, label: STEM_LABEL[s.type], url: s.url }));
     return song.audio_url ? [{ id: "mix", label: "Mix completo", url: song.audio_url }] : [];
   }, [stems, song.audio_url]);
 
@@ -166,48 +173,87 @@ export function SongWorkspace({ song, busy, onChanged, onReanalyze }: SongWorksp
   return (
     <>
       {error && <Notice tone="error">{error.message}</Notice>}
-      <AnalysisPanel
-        state={analysisState}
-        duration={duration}
-        time={time}
-        loop={player?.snap.loop ?? null}
-        snap={snap}
-        onSeek={seek}
-        onLoop={setLoop}
-        busy={busy}
-        onReanalyze={onReanalyze}
-        display={display}
-        compact={view.compact}
-        onExempt={onExempt}
-        afterWaveform={
-          player ? <MixerPanel player={player} selected={selected} onSelect={setSelected} hasStems={hasStems} /> : null
-        }
-        practice={
-          <PracticeControls
-            view={view}
-            onChange={changeView}
-            originalKey={analysis?.key ?? null}
-            sounding={sounding}
-            audioSemitones={player?.snap.pitchAvailable ? player.snap.semitones : null}
-            onApplyToAudio={player?.snap.pitchAvailable ? () => engine?.setSemitones(view.transpose) : null}
-          />
-        }
-        diagrams={
-          shapes.length > 0 ? <ChordDiagrams shapes={shapes} instrument={view.instrument} activeShape={activeShape} /> : null
-        }
-      >
-        <LyricsPanel song={song} time={time} onSeek={seek} chordLabel={chordLabel} />
-        <TabsPanel
-          song={song}
-          downbeats={downbeats}
-          duration={duration}
-          transpose={view.transpose}
-          capo={view.capo}
+      {analysis && (
+        <SectionsNav
+          sections={analysis.sections}
           time={time}
           onSeek={seek}
+          onLoop={(a, b) => setLoop({ a, b, enabled: true })}
         />
-        <StemsPanel song={song} stems={stems} onChanged={onChanged} />
-      </AnalysisPanel>
+      )}
+      <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-5">
+        <div className="flex min-w-0 flex-col gap-5">
+          <AnalysisPanel
+            state={analysisState}
+            duration={duration}
+            time={time}
+            loop={player?.snap.loop ?? null}
+            snap={snap}
+            onSeek={seek}
+            onLoop={setLoop}
+            busy={busy}
+            onReanalyze={onReanalyze}
+            display={display}
+            compact={view.compact}
+            onExempt={onExempt}
+          >
+            <LyricsPanel song={song} time={time} onSeek={seek} chordLabel={chordLabel} />
+            <TabsPanel
+              song={song}
+              downbeats={downbeats}
+              duration={duration}
+              transpose={view.transpose}
+              capo={view.capo}
+              time={time}
+              onSeek={seek}
+            />
+            <StemsPanel song={song} stems={stems} onChanged={onChanged} />
+          </AnalysisPanel>
+        </div>
+
+        <aside
+          aria-label="Mixer, tonalità e diagrammi"
+          className="sticky top-0 flex max-h-[calc(100vh-9rem)] flex-col gap-4 overflow-y-auto pb-4"
+        >
+          {player ? (
+            <MixerPanel
+              player={player}
+              selected={selected}
+              onSelect={setSelected}
+              hasStems={hasStems}
+            />
+          ) : (
+            <div className="h-48 animate-pulse rounded-lg bg-surface" aria-hidden="true" />
+          )}
+          {analysis?.analyzed && (
+            <PracticeControls
+              view={view}
+              onChange={changeView}
+              originalKey={analysis.key}
+              sounding={sounding}
+              audioSemitones={player?.snap.pitchAvailable ? player.snap.semitones : null}
+              onApplyToAudio={
+                player?.snap.pitchAvailable ? () => engine?.setSemitones(view.transpose) : null
+              }
+            />
+          )}
+          {shapes.length > 0 && (
+            <section
+              aria-labelledby="diagrams-title"
+              className="rounded-lg border border-line bg-surface p-3"
+            >
+              <h2 id="diagrams-title" className="mb-2 text-sm font-semibold">
+                Diagrammi
+              </h2>
+              <ChordDiagrams
+                shapes={shapes}
+                instrument={view.instrument}
+                activeShape={activeShape}
+              />
+            </section>
+          )}
+        </aside>
+      </div>
 
       {player && (
         <TransportBar

@@ -252,7 +252,7 @@ function SourceActions({
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={8}
-            className="rounded-md border border-line bg-ground px-2.5 py-2 font-mono text-xs focus:border-accent focus:outline-none"
+            className="rounded-md border border-line bg-ground px-2.5 py-2 font-mono text-xs focus:border-brand focus:outline-none"
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setPasting(false)}>
@@ -365,7 +365,7 @@ function Karaoke({
   return (
     <div>
       <label className="mb-2 flex items-center justify-end gap-2 text-xs text-ink-muted">
-        <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="accent-[var(--color-accent)]" />
+        <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="accent-[var(--brand)]" />
         Scorri automaticamente
       </label>
       <ol className="flex max-h-[28rem] flex-col gap-3 overflow-y-auto pr-2" aria-label="Testo sincronizzato">
@@ -413,11 +413,11 @@ function WordChip({
       onClick={() => word.start_s !== null && onSeek(word.start_s)}
       className="flex flex-col items-start text-left disabled:cursor-default"
     >
-      <span className="h-4 font-mono text-xs font-semibold text-accent" aria-hidden={chord ? undefined : "true"}>
+      <span className="h-4 font-mono text-xs font-semibold text-brand" aria-hidden={chord ? undefined : "true"}>
         {chord ?? ""}
       </span>
       <span
-        className={`rounded px-0.5 text-base ${current ? "bg-accent text-ground" : activeLine && sung ? "text-accent" : ""}`}
+        className={`rounded px-0.5 text-base ${current ? "bg-brand text-on-brand" : activeLine && sung ? "text-brand" : ""}`}
       >
         {word.text}
       </span>
@@ -459,7 +459,7 @@ function TimeInput({
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}
       onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && commit()}
-      className={`w-20 rounded border bg-ground px-1.5 py-0.5 font-mono text-xs focus:outline-none ${invalid ? "border-bad" : "border-line focus:border-accent"}`}
+      className={`w-20 rounded border bg-ground px-1.5 py-0.5 font-mono text-xs focus:outline-none ${invalid ? "border-bad" : "border-line focus:border-brand"}`}
     />
   );
 }
@@ -492,12 +492,12 @@ function Editor({
         </Button>
       </li>
       {lines.map((line, i) => (
-        <li key={line.id} className={`rounded-md border px-2 py-1.5 ${line.edited ? "border-accent/40" : "border-line"}`}>
+        <li key={line.id} className={`rounded-md border px-2 py-1.5 ${line.edited ? "border-brand/40" : "border-line"}`}>
           <div className="flex flex-wrap items-center gap-2">
             <TimeInput label={`Inizio riga ${i + 1}`} value={line.start_s} onCommit={(v) => patchLine(line.id, { start_s: v })} />
             <Button
               variant="ghost"
-              title="Imposta l'inizio alla posizione di ascolto"
+              aria-label="Imposta l'inizio alla posizione di ascolto" title="Imposta l'inizio alla posizione di ascolto"
               className="px-1.5 py-0.5 text-xs"
               onClick={() => patchLine(line.id, { start_s: Math.round(time * 100) / 100 })}
             >
@@ -506,7 +506,7 @@ function Editor({
             <LineText line={line} onCommit={(text) => patchLine(line.id, { text })} />
             <TimeInput label={`Fine riga ${i + 1}`} value={line.end_s} onCommit={(v) => patchLine(line.id, { end_s: v })} />
             <span className="flex gap-0.5">
-              <Button variant="ghost" className="px-1.5 py-0.5 text-xs" disabled={line.start_s === null} onClick={() => line.start_s !== null && onSeek(line.start_s)} title="Ascolta da qui">
+              <Button variant="ghost" className="px-1.5 py-0.5 text-xs" disabled={line.start_s === null} onClick={() => line.start_s !== null && onSeek(line.start_s)} aria-label="Ascolta da qui" title="Ascolta da qui">
                 ▶
               </Button>
               <Button variant="ghost" className="px-1.5 py-0.5 text-xs" onClick={() => setOpen(open === line.id ? null : line.id)} aria-expanded={open === line.id}>
@@ -515,7 +515,7 @@ function Editor({
               <Button
                 variant="ghost"
                 className="px-1.5 py-0.5 text-xs"
-                title="Aggiungi una riga dopo"
+                aria-label="Aggiungi una riga dopo" title="Aggiungi una riga dopo"
                 onClick={() =>
                   void run(() =>
                     api("POST", `/songs/${songId}/lyrics/lines`, {
@@ -529,11 +529,11 @@ function Editor({
                 +
               </Button>
               {line.edited && (
-                <Button variant="ghost" className="px-1.5 py-0.5 text-xs" title="Ripristina l'originale" onClick={() => void run(() => api("POST", `/songs/${songId}/lyrics/${line.id}/restore`))}>
+                <Button variant="ghost" className="px-1.5 py-0.5 text-xs" aria-label="Ripristina l'originale" title="Ripristina l'originale" onClick={() => void run(() => api("POST", `/songs/${songId}/lyrics/${line.id}/restore`))}>
                   ↺
                 </Button>
               )}
-              <Button variant="ghost" className="px-1.5 py-0.5 text-xs text-bad" title="Elimina la riga" onClick={() => void run(() => api("DELETE", `/songs/${songId}/lyrics/${line.id}`))}>
+              <Button variant="ghost" className="px-1.5 py-0.5 text-xs text-bad" aria-label="Elimina la riga" title="Elimina la riga" onClick={() => void run(() => api("DELETE", `/songs/${songId}/lyrics/${line.id}`))}>
                 ✕
               </Button>
             </span>
@@ -560,7 +560,7 @@ function LineText({ line, onCommit }: { line: LyricLine; onCommit: (text: string
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => e.key === "Enter" && commit()}
-      className="min-w-0 flex-1 rounded border border-line bg-ground px-2 py-0.5 focus:border-accent focus:outline-none"
+      className="min-w-0 flex-1 rounded border border-line bg-ground px-2 py-0.5 focus:border-brand focus:outline-none"
     />
   );
 }
@@ -581,7 +581,7 @@ function WordsEditor({ songId, line, run }: { songId: string; line: LyricLine; r
           <Button
             variant="ghost"
             className="px-1.5 py-0.5 text-xs"
-            title="Aggiungi una parola dopo"
+            aria-label="Aggiungi una parola dopo" title="Aggiungi una parola dopo"
             onClick={() =>
               void run(() => api("POST", `/songs/${songId}/lyrics/${line.id}/words`, { after_word_id: w.id, text: "…" }))
             }
@@ -591,7 +591,7 @@ function WordsEditor({ songId, line, run }: { songId: string; line: LyricLine; r
           <Button
             variant="ghost"
             className="px-1.5 py-0.5 text-xs text-bad"
-            title="Elimina la parola"
+            aria-label="Elimina la parola" title="Elimina la parola"
             onClick={() => void run(() => api("DELETE", `/songs/${songId}/lyrics/words/${w.id}`))}
           >
             ✕
@@ -617,7 +617,7 @@ function WordText({ word, onCommit }: { word: LyricWord; onCommit: (text: string
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => e.key === "Enter" && commit()}
-      className="w-32 rounded border border-line bg-ground px-1.5 py-0.5 focus:border-accent focus:outline-none"
+      className="w-32 rounded border border-line bg-ground px-1.5 py-0.5 focus:border-brand focus:outline-none"
     />
   );
 }

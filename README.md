@@ -4,15 +4,15 @@ App desktop **per Windows 10/11 (x64)**, local-first, che trasforma un file audi
 testi sincronizzati, tab, diagrammi e 6 stem con mixer e strumenti di pratica.
 Tutto gira sul tuo PC: nessun account, nessun servizio cloud obbligatorio.
 
-> **Stato:** fase 7 di 10. Scheletro, importazione da file locale (e da YouTube, se
+> **Stato:** fase 8 di 10. Scheletro, importazione da file locale (e da YouTube, se
 > attivato), analisi (beat grid, BPM, tonalità, accordi, sezioni, waveform), separazione in
 > 6 stem, rilevamento dell'hardware con profili, gestione dello spazio su disco e testi
 > sincronizzati parola per parola con editor, player con mixer degli stem, velocità, tonalità,
-> loop e metronomo, trasposizione, capo, semplificazione, notazioni, diagrammi e tab. Restano
-> interfaccia completa, export e verifiche finali (fasi 8-10, vedi `PIANO.md`).
+> loop e metronomo, trasposizione, capo, semplificazione, notazioni, diagrammi, tab e interfaccia
+> completa (tema scuro e chiaro, 3 colonne). Restano export e verifiche finali (fasi 9-10).
 >
 > I test automatici sono rimandati: verranno scritti ed eseguiti sul PC di test con GPU
-> NVIDIA. Il codice delle fasi 2-7 è stato controllato solo staticamente (mypy, ruff, tsc):
+> NVIDIA. Il codice delle fasi 2-8 è stato controllato solo staticamente (mypy, ruff, tsc):
 > nessun brano è ancora stato importato, analizzato, separato, trascritto o riprodotto.
 
 ## Prerequisiti
@@ -133,6 +133,19 @@ Nella scheda del brano:
   sopravvive al riavvio. Ogni modifica si salva subito.
 - **Incolla il testo** (anche in formato LRC) per sostituire quello trovato, poi allineamento.
 - Brani strumentali e voce assente vengono segnalati.
+
+## Interfaccia
+
+Finestra da almeno 1280 px, su tre colonne:
+- **sinistra**: importazione, coda di elaborazione, catalogo e sezioni del brano aperto;
+- **centro**: tonalità e BPM, waveform, accordi, testo, tab, stem;
+- **destra**: mixer, trasposizione / capo / semplificazione / notazione, diagrammi;
+- **in basso**: barra di trasporto fissa.
+
+Nell'intestazione: ricerca nel catalogo, stato del sistema, **tema** (Scuro "studio",
+Chiaro o Sistema, ricordato tra le sessioni) e impostazioni. Contrasti WCAG AA in entrambi
+i temi, focus visibile, collegamento "Vai al contenuto", etichette ARIA, navigazione da
+tastiera; le animazioni si disattivano se Windows ha le animazioni ridotte.
 
 ## Player e pratica
 

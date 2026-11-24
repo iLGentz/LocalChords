@@ -44,7 +44,7 @@ export function PracticeControls(props: PracticeControlsProps) {
   const current = suggestions?.find((s) => s.capo === view.capo);
 
   return (
-    <section aria-label="Trasposizione e visualizzazione" className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-lg border border-line bg-surface p-3 text-xs">
+    <section aria-label="Trasposizione e visualizzazione" className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3 text-xs [&>label]:justify-between">
       <div className="flex items-center gap-1">
         <span className="text-ink-muted">Trasponi</span>
         <Button variant="ghost" className="px-2 py-0.5" disabled={view.transpose <= -11} onClick={() => onChange({ transpose: view.transpose - 1 })} aria-label="Un semitono sotto">
@@ -122,7 +122,7 @@ export function PracticeControls(props: PracticeControlsProps) {
       </label>
 
       <label className="flex items-center gap-1">
-        <input type="checkbox" checked={view.compact} onChange={(e) => onChange({ compact: e.target.checked })} className="accent-[var(--color-accent)]" />
+        <input type="checkbox" checked={view.compact} onChange={(e) => onChange({ compact: e.target.checked })} className="accent-[var(--brand)]" />
         Vista compatta
       </label>
     </section>

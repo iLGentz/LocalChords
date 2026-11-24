@@ -7,7 +7,6 @@ interface CatalogSidebarProps {
   loading: boolean;
   error: ApiError | null;
   query: string;
-  onQueryChange: (q: string) => void;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onImport: () => void;
@@ -15,15 +14,15 @@ interface CatalogSidebarProps {
 }
 
 const STATUS_DOT: Record<Song["status"], string> = {
-  importing: "bg-accent animate-pulse",
-  processing: "bg-accent animate-pulse",
+  importing: "bg-brand animate-pulse",
+  processing: "bg-brand animate-pulse",
   ready: "bg-ok",
   failed: "bg-bad",
   cancelled: "bg-ink-muted",
 };
 
 export function CatalogSidebar(props: CatalogSidebarProps) {
-  const { songs, loading, error, query, onQueryChange, selectedId, onSelect, onImport, importActive } =
+  const { songs, loading, error, query, selectedId, onSelect, onImport, importActive } =
     props;
   const inProgress = songs.filter((s) => isJobActive(s.job));
 
@@ -37,21 +36,10 @@ export function CatalogSidebar(props: CatalogSidebarProps) {
           type="button"
           onClick={onImport}
           aria-current={importActive ? "page" : undefined}
-          className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-ground hover:brightness-110"
+          className="rounded-md bg-brand px-3 py-2 text-sm font-semibold text-on-brand hover:brightness-110"
         >
           Importa brano
         </button>
-        <label htmlFor="catalog-search" className="sr-only">
-          Cerca nel catalogo
-        </label>
-        <input
-          id="catalog-search"
-          type="search"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Cerca titolo, artista, album"
-          className="rounded-md border border-line bg-ground px-2.5 py-1.5 text-sm placeholder:text-ink-muted/60 focus:border-accent focus:outline-none"
-        />
       </div>
 
       {inProgress.length > 0 && (
@@ -127,6 +115,8 @@ export function CatalogSidebar(props: CatalogSidebarProps) {
           ))}
         </ul>
       </nav>
+      {/* Sezioni del brano aperto (inserite qui dalla scheda del brano). */}
+      <div id="sidebar-sections" className="border-t border-line empty:hidden" />
     </aside>
   );
 }

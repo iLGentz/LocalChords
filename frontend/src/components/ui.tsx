@@ -1,24 +1,31 @@
-/** Componenti di base condivisi (sostituibili con shadcn/ui nella fase 8). */
+/**
+ * Componenti di base dell'app. `Button` è un adattatore sopra il pulsante di shadcn/ui
+ * (`@/components/ui/button`): stessa API usata in tutta l'app, stile e focus di shadcn.
+ */
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+
+import { Button as ShadcnButton } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
-const VARIANT: Record<Variant, string> = {
-  primary: "bg-accent text-ground hover:brightness-110 font-semibold",
-  secondary: "border border-line bg-raised text-ink hover:border-ink-muted",
-  ghost: "text-ink-muted hover:text-ink hover:bg-raised",
-  danger: "border border-bad/50 text-bad hover:bg-bad/10",
+const VARIANT: Record<Variant, "default" | "outline" | "ghost" | "destructive"> = {
+  primary: "default",
+  secondary: "outline",
+  ghost: "ghost",
+  danger: "destructive",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
 }
 
-export function Button({ variant = "secondary", className = "", ...props }: ButtonProps) {
+export function Button({ variant = "secondary", className, type = "button", ...props }: ButtonProps) {
   return (
-    <button
-      type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${VARIANT[variant]} ${className}`}
+    <ShadcnButton
+      type={type}
+      variant={VARIANT[variant]}
+      className={cn(variant === "ghost" && "text-ink-muted", variant === "primary" && "font-semibold", className)}
       {...props}
     />
   );
@@ -42,7 +49,7 @@ export function ProgressBar({ value, label }: ProgressBarProps) {
       className="h-1.5 w-full overflow-hidden rounded-full bg-raised"
     >
       <div
-        className={`h-full rounded-full bg-accent transition-[width] duration-300 ${pct == null ? "w-1/3 animate-pulse" : ""}`}
+        className={`h-full rounded-full bg-brand transition-[width] duration-300 ${pct == null ? "w-1/3 animate-pulse" : ""}`}
         style={pct != null ? { width: `${pct}%` } : undefined}
       />
     </div>
@@ -100,7 +107,7 @@ export function TextField({ id, label, value, onChange, required, placeholder }:
         placeholder={placeholder}
         maxLength={500}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-line bg-ground px-2.5 py-1.5 text-ink placeholder:text-ink-muted/60 focus:border-accent focus:outline-none"
+        className="rounded-md border border-line bg-ground px-2.5 py-1.5 text-ink placeholder:text-ink-muted focus:border-brand focus:outline-none"
       />
     </label>
   );

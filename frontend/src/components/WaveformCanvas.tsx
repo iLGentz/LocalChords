@@ -67,7 +67,7 @@ export function WaveformCanvas(props: WaveformCanvasProps) {
       ctx.fillRect(x0, BAND, x1 - x0, HEIGHT - BAND);
       ctx.fillStyle = s.color;
       ctx.fillRect(x0, 0, 2, BAND);
-      ctx.fillStyle = cssVar("--color-ink-muted", "#a8a097");
+      ctx.fillStyle = cssVar("--ink-muted", "#a8a097");
       ctx.save();
       ctx.beginPath();
       ctx.rect(x0, 0, x1 - x0 - 2, BAND);
@@ -81,7 +81,7 @@ export function WaveformCanvas(props: WaveformCanvasProps) {
     if (shownLoop) {
       ctx.fillStyle = shownLoop.enabled ? "rgba(240,167,58,0.16)" : "rgba(168,160,151,0.10)";
       ctx.fillRect(x(shownLoop.a), BAND, x(shownLoop.b) - x(shownLoop.a), HEIGHT - BAND);
-      ctx.fillStyle = shownLoop.enabled ? cssVar("--color-accent", "#f0a73a") : "#77716a";
+      ctx.fillStyle = shownLoop.enabled ? cssVar("--brand", "#f0a73a") : "#77716a";
       ctx.fillRect(x(shownLoop.a), BAND, 1.5, HEIGHT - BAND);
       ctx.fillRect(x(shownLoop.b) - 1.5, BAND, 1.5, HEIGHT - BAND);
     }
@@ -91,6 +91,8 @@ export function WaveformCanvas(props: WaveformCanvasProps) {
     const amp = (HEIGHT - BAND) / 2 - 4;
     const step = 3;
     const values = peaks.peaks;
+    const waveColor = cssVar("--wave", "#5b554e");
+    const playedColor = cssVar("--wave-played", "#b9b1a6");
     const played = x(time);
     for (let px = 0; px < width; px += step) {
       const i0 = Math.floor((px / width) * values.length);
@@ -98,12 +100,12 @@ export function WaveformCanvas(props: WaveformCanvasProps) {
       let v = 0;
       for (let i = i0; i < i1 && i < values.length; i++) v = Math.max(v, values[i] ?? 0);
       const h = Math.max(1, v * amp);
-      ctx.fillStyle = px < played ? "#b9b1a6" : "#5b554e";
+      ctx.fillStyle = px < played ? playedColor : waveColor;
       ctx.fillRect(px, mid - h, step - 1, h * 2);
     }
 
     // cursore
-    ctx.fillStyle = cssVar("--color-accent", "#f0a73a");
+    ctx.fillStyle = cssVar("--brand", "#f0a73a");
     ctx.fillRect(played - 1, 0, 2, HEIGHT);
   }, [width, peaks, duration, sections, time, loop, drag]);
 
