@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 
 from app import __version__
 from app.api.errors import ApiError, install_error_handlers
-from app.api.routers import analysis, health, jobs, lyrics, practice, songs, system, tabs
+from app.api.routers import analysis, exports, health, jobs, lyrics, practice, songs, system, tabs
 from app.config import Settings, get_settings
 from app.db.session import Database
 from app.importing.service import SongService
@@ -82,8 +82,11 @@ def create_app(settings: Settings | None = None, db: Database | None = None) -> 
     api.include_router(lyrics.router)
     api.include_router(practice.router)
     api.include_router(tabs.router)
+    api.include_router(exports.router)
 
-    @api.api_route("/{path:path}", methods=["GET", "POST", "PATCH", "PUT", "DELETE"])
+    @api.api_route(
+        "/{path:path}", methods=["GET", "POST", "PATCH", "PUT", "DELETE"], include_in_schema=False
+    )
     def _api_not_found(path: str) -> None:
         raise ApiError(404, "not_found", f"Endpoint inesistente: /api/{path}")
 

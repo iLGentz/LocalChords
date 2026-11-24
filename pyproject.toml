@@ -17,6 +17,8 @@ dependencies = [
     "numpy>=2.0",
     "scipy>=1.14",
     "faster-whisper>=1.2",
+    "reportlab>=5.1",
+    "pedalboard>=0.9.26",
 ]
 
 [project.optional-dependencies]
@@ -84,7 +86,7 @@ packages = ["app"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["webview", "webview.*", "yt_dlp", "yt_dlp.*", "soundfile", "librosa", "librosa.*", "audio_separator", "audio_separator.*", "onnxruntime", "torch", "torch.*", "faster_whisper", "faster_whisper.*", "scipy", "scipy.*"]
+module = ["webview", "webview.*", "yt_dlp", "yt_dlp.*", "soundfile", "librosa", "librosa.*", "audio_separator", "audio_separator.*", "onnxruntime", "torch", "torch.*", "faster_whisper", "faster_whisper.*", "scipy", "scipy.*", "pedalboard", "reportlab", "reportlab.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

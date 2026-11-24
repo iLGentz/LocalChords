@@ -209,6 +209,8 @@ def open_window(url: str, settings: Settings, smoke_test: bool) -> bool:
             log.info("smoke test finestra", extra={"ok": result["ok"]})
             window.destroy()
 
+    # pywebview blocca i download per impostazione predefinita: servono per gli export.
+    webview.settings["ALLOW_DOWNLOADS"] = True
     webview.start(
         _smoke if smoke_test else None,
         private_mode=False,

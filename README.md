@@ -4,15 +4,15 @@ App desktop **per Windows 10/11 (x64)**, local-first, che trasforma un file audi
 testi sincronizzati, tab, diagrammi e 6 stem con mixer e strumenti di pratica.
 Tutto gira sul tuo PC: nessun account, nessun servizio cloud obbligatorio.
 
-> **Stato:** fase 8 di 10. Scheletro, importazione da file locale (e da YouTube, se
+> **Stato:** fase 9 di 10. Scheletro, importazione da file locale (e da YouTube, se
 > attivato), analisi (beat grid, BPM, tonalità, accordi, sezioni, waveform), separazione in
 > 6 stem, rilevamento dell'hardware con profili, gestione dello spazio su disco e testi
 > sincronizzati parola per parola con editor, player con mixer degli stem, velocità, tonalità,
 > loop e metronomo, trasposizione, capo, semplificazione, notazioni, diagrammi, tab e interfaccia
-> completa (tema scuro e chiaro, 3 colonne). Restano export e verifiche finali (fasi 9-10).
+> completa (tema scuro e chiaro, 3 colonne) ed export. Resta la verifica end-to-end (fase 10).
 >
 > I test automatici sono rimandati: verranno scritti ed eseguiti sul PC di test con GPU
-> NVIDIA. Il codice delle fasi 2-8 è stato controllato solo staticamente (mypy, ruff, tsc):
+> NVIDIA. Il codice delle fasi 2-9 è stato controllato solo staticamente (mypy, ruff, tsc):
 > nessun brano è ancora stato importato, analizzato, separato, trascritto o riprodotto.
 
 ## Prerequisiti
@@ -194,6 +194,18 @@ Memoria: i 6 stem decodificati occupano circa 500 MB per un brano di 4 minuti (4
 Trasposizione, capo e semplificazione si salvano per brano; notazione, strumento e vista sono
 preferenze generali.
 
+## Esportazione
+
+Pannello **Esporta** nella colonna destra della scheda del brano; i file vanno nella cartella
+Download di Windows.
+
+| Cosa | Formati | Note |
+|---|---|---|
+| Accordi e testo | PDF, TXT, ChordPro (`.cho`) | come mostrati: trasposizione, capo, semplificazione e notazione; titolo, artista, tonalità, capo, BPM |
+| Tab | PDF | dal pannello Tab, chitarra o basso, con trasposizione e capo |
+| Mix audio | MP3 320 kbit/s, WAV 16 bit | "come nel player": velocità, tonalità (Rubber Band) e mixer; il livello viene abbassato se andrebbe in clipping; MP3 con metadati |
+| Stem | FLAC, singoli o ZIP | |
+
 ## Spazio su disco
 
 In **Impostazioni → Spazio su disco**: occupazione di audio, stem, waveform, modelli, cache,
@@ -259,6 +271,7 @@ app\hardware.py rilevamento di GPU e runtime, profili
 app\lyrics\     LRCLIB, Whisper in un processo figlio, allineamento, editor, job dei testi
 app\editing\    cronologia persistente delle modifiche (annulla/ripristina)
 app\tabs\       Basic Pitch in ONNX Runtime e assegnazione di corda e tasto
+app\export\     spartito (TXT, ChordPro, PDF), tab in PDF, export audio
 app\media\      wrapper di ffprobe e ffmpeg
 app\storage\    struttura della cartella data\
 app\adapters\   adapter YouTube (yt-dlp), facoltativo
@@ -321,6 +334,9 @@ frontend\       Vite + React + TypeScript + Tailwind, compilato in statico e ser
 | POST | `/api/songs/{id}/chords/{chordId}/restore` | riporta l'accordo all'originale |
 | GET / PUT | `/api/settings/display` | notazione, strumento, vista compatta |
 | GET / POST | `/api/songs/{id}/tabs` | tab di chitarra e basso / generazione |
+| POST | `/api/songs/{id}/export` | `pdf`, `txt`, `chordpro`, `tabs_pdf` (file subito) · `wav`, `mp3` (job) |
+| GET | `/api/exports/{jobId}` | file del mix esportato |
+| GET | `/api/songs/{id}/stems/{tipo}/download`, `/stems.zip` | stem singolo o tutti in ZIP |
 
 Le anteprime di upload non confermate vengono eliminate dopo 24 ore.
 
@@ -334,6 +350,46 @@ Le anteprime di upload non confermate vengono eliminate dopo 24 ore.
 | `uv` non trovato | `winget install astral-sh.uv`, poi riapri PowerShell |
 | "Accesso negato" avviando `python.exe` del venv | un antivirus blocca il launcher: riesegui `setup.ps1`, che ricrea il venv con il launcher standard di CPython |
 | Errori con i dettagli | avvia `LocalChords.bat --console` e guarda `logs\app.log` e `logs\worker.log` |
+
+## Limiti noti
+
+- **Nessun test automatico** nel repository: rimandati alla verifica sul PC con GPU NVIDIA.
+  Dalla fase 2 in poi il codice è stato controllato solo staticamente; nessun brano reale è
+  ancora stato elaborato da capo a fondo.
+- **Accordi**: il backend attuale (chroma + HMM) è il fallback del piano; BTC non è ancora
+  integrato. Accuratezza attesa sotto il 65-80% stimato per i modelli neurali: va misurata.
+- **Beat e sezioni**: librosa; Beat This! e SongFormer non sono integrati. Metro 4/4 presunto.
+- **Testi**: allineamento con faster-whisper + allineamento testuale (non WhisperX): tempi
+  per parola meno precisi; serve l'editor.
+- **Tab** indicative: corda e tasto sono stimati.
+- **Separazione**: profilo Bilanciato (DirectML) non disponibile; chitarra e piano restano gli
+  stem più deboli anche con BS-RoFormer.
+- **Memoria**: il player tiene in RAM i 6 stem decodificati (~500 MB per 4 minuti).
+- **Editor degli accordi**: si modifica il simbolo e si ripristina l'originale via API; dividere,
+  unire e trascinare i confini degli accordi e delle sezioni dall'interfaccia non è ancora
+  disponibile. BPM, offset della beat grid e tonalità non sono ancora modificabili.
+- **Solo Windows 10/11 x64**, finestra da almeno 1280 px.
+
+## Dipendenze esterne e licenze
+
+| Componente | Uso | Licenza |
+|---|---|---|
+| FFmpeg (build gyan.dev) | decodifica, conversione, MP3 | GPL (build "essentials") |
+| audio-separator, HT-Demucs | separazione | MIT |
+| BS-RoFormer SW (pesi) | separazione, profilo Massima qualità | **CC-BY-NC-SA-4.0, solo uso non commerciale** |
+| PyTorch | runtime della separazione | BSD |
+| faster-whisper, modelli Whisper | trascrizione e allineamento | MIT |
+| Basic Pitch (modello e algoritmo, portati) | note per le tab | Apache-2.0 |
+| librosa, numpy, scipy, soundfile | analisi | ISC / BSD |
+| pedalboard (Rubber Band) | velocità e tonalità nell'export | **GPL-3.0** |
+| reportlab | PDF | BSD |
+| yt-dlp (facoltativo) | import da YouTube | Unlicense |
+| LRCLIB (servizio, facoltativo) | testi sincronizzati | servizio pubblico gratuito |
+| @soundtouchjs/audio-worklet | velocità e tonalità nel player | MPL-2.0 |
+| Tonal.js, chords-db, React, Tailwind, shadcn/ui, Radix | interfaccia e teoria | MIT |
+
+Uniche chiamate di rete: download dei modelli e di FFmpeg (su richiesta), LRCLIB (se
+attivo, solo titolo/artista/album/durata), YouTube (se attivato).
 
 ## Note legali
 

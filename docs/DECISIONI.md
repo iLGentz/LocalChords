@@ -10,6 +10,42 @@ fase 1 è stato verificato con quei test prima della rimozione; dalla fase 2 in 
 controlli sono solo statici (mypy strict, ruff, `tsc`, build) finché non si riprendono.
 La configurazione di pytest in `pyproject.toml` resta pronta.
 
+## Fase 9 — export (24/11/2026)
+
+### Una sola teoria musicale
+Gli export di accordi e testo ricevono dal frontend i nomi degli accordi già trasformati
+(`labels`: id → nome), più tonalità risultante, capo e note. Così trasposizione,
+semplificazione e notazione esistono solo in `frontend/src/lib/music.ts` e il file esportato
+coincide con lo schermo. Il backend ricostruisce l'impaginazione: accordi sopra la parola in
+cui cadono (dai tempi delle parole), righe di soli accordi per le parti strumentali, titoli
+di sezione. Le tab in PDF ricevono le righe già calcolate dal pannello delle tab.
+
+### Formati
+- TXT (UTF-8 con BOM, perché il Blocco note di Windows lo apra correttamente),
+  ChordPro (`{title}`, `{artist}`, `{key}`, `{capo}`, `{tempo}`, accordi in linea), PDF con
+  reportlab (font standard: Helvetica e Courier per l'allineamento in colonna).
+- Audio: job `export_audio`. Somma delle tracce con i guadagni del mixer (stessa logica di
+  mute e solo del player), velocità e tonalità con Rubber Band (`pedalboard.time_stretch`,
+  come da piano), riduzione del livello se il picco supera -0,2 dBFS, WAV 16 bit o MP3 LAME
+  320 kbit/s con metadati ID3. File in `data/exports` (svuotabile da Spazio su disco).
+- Stem: FLAC originali, singoli o in ZIP non compresso (scritto su disco, poi eliminato).
+
+### Download nella finestra
+pywebview blocca i download per impostazione predefinita (`ALLOW_DOWNLOADS = False`):
+`app/desktop.py` li abilita. I file finiscono nella cartella Download di Windows (gestione
+standard di WebView2). Da verificare sul PC di test anche per i download da blob (export
+generati con POST).
+
+### Licenze GPL
+pedalboard (Rubber Band) è GPL-3.0, così come la build "essentials" di FFmpeg. Per un uso
+personale non cambia nulla; se l'app venisse distribuita a terzi, andrebbero rispettati gli
+obblighi della GPL (sorgenti disponibili) oppure sostituiti questi componenti. Annotato nel
+README.
+
+### Test
+La fase 9 del piano prevede anche pytest, Vitest e Playwright: **rimandati** su richiesta,
+come tutti i test, alla verifica sul PC con RTX 3080 Ti.
+
 ## Fase 8 — interfaccia (24/11/2026)
 
 ### shadcn/ui

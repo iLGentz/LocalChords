@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button, Notice } from "@/components/ui";
 import { api, apiGet, asApiError, type ApiError, type Song } from "@/lib/api";
+import { postDownload } from "@/lib/download";
 
 interface TabNote {
   string: number;
@@ -195,13 +196,31 @@ export function TabsPanel({ song, downbeats, duration, transpose, capo, time, on
               );
             })}
           </div>
-          {!working && canGenerate && (
-            <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() =>
+                void postDownload(
+                  `/songs/${song.id}/export`,
+                  {
+                    format: "tabs_pdf",
+                    tab_instrument: kind === "guitar" ? "chitarra" : "basso",
+                    tab_rows: rows.map((r) => r.text),
+                    capo: kind === "guitar" ? capo : 0,
+                    notes: transpose !== 0 ? [`Trasposte di ${transpose > 0 ? "+" : ""}${transpose} semitoni`] : [],
+                  },
+                  `${song.title} - tab.pdf`,
+                ).catch((e: unknown) => setError(asApiError(e)))
+              }
+            >
+              Esporta PDF
+            </Button>
+            {!working && canGenerate && (
               <Button variant="ghost" onClick={() => void generate()}>
                 Rigenera
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </section>

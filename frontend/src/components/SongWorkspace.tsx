@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BeatGrid, LoopState, TrackSpec } from "@/audio/engine";
 import { AnalysisPanel } from "@/components/AnalysisPanel";
 import { ChordDiagrams } from "@/components/ChordDiagrams";
+import { ExportPanel } from "@/components/ExportPanel";
 import { LyricsPanel } from "@/components/LyricsPanel";
 import { MixerPanel } from "@/components/MixerPanel";
 import { PracticeControls, type PracticeView } from "@/components/PracticeControls";
@@ -16,7 +17,7 @@ import { usePlayer, usePlayerTime } from "@/hooks/usePlayer";
 import { usePlayerShortcuts } from "@/hooks/usePlayerShortcuts";
 import { useStems } from "@/hooks/useStems";
 import { api, apiGet, asApiError, type ApiError, type ChordEvent, type Song } from "@/lib/api";
-import { displayChord, type DisplayedChord } from "@/lib/music";
+import { displayChord, keyName, parseKey, transposeKey, type DisplayedChord } from "@/lib/music";
 
 interface SongWorkspaceProps {
   song: Song;
@@ -129,6 +130,22 @@ export function SongWorkspace({ song, busy, onChanged, onReanalyze }: SongWorksp
     },
     [song.id],
   );
+
+  const originalKey = parseKey(analysis?.key ?? null);
+  const exportKey = originalKey ? keyName(transposeKey(originalKey, view.transpose)) : null;
+  const exportNotes = useMemo(() => {
+    const out: string[] = [];
+    if (view.transpose !== 0)
+      out.push(
+        `Trasposto di ${view.transpose > 0 ? "+" : ""}${view.transpose} semitoni (originale ${analysis?.key ?? "?"})`,
+      );
+    if (view.capo > 0) out.push(`Accordi come forme con capo al ${view.capo}° tasto`);
+    if (view.simplification !== "original")
+      out.push(`Semplificazione: ${view.simplification === "easy" ? "facile" : "intermedia"}`);
+    if (view.notation !== "american")
+      out.push(`Notazione ${view.notation === "italian" ? "italiana" : "numerica"}`);
+    return out;
+  }, [view.transpose, view.capo, view.simplification, view.notation, analysis?.key]);
 
   // ------------------------------------------------------------------- player
   const tracks = useMemo<TrackSpec[]>(() => {
@@ -251,6 +268,19 @@ export function SongWorkspace({ song, busy, onChanged, onReanalyze }: SongWorksp
                 activeShape={activeShape}
               />
             </section>
+          )}
+          {analysis?.analyzed && (
+            <ExportPanel
+              songId={song.id}
+              songTitle={song.title}
+              chords={analysis.chords}
+              chordLabel={chordLabel}
+              keyLabel={exportKey}
+              capo={view.capo}
+              notes={exportNotes}
+              player={player}
+              stems={stems}
+            />
           )}
         </aside>
       </div>
