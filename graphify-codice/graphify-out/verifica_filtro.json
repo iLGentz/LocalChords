@@ -1,0 +1,18 @@
+{
+  "fonte": "graphify extract . --code-only --max-workers 1 --out .\\graphify-codice",
+  "criteri": [
+    "solo confidence EXTRACTED",
+    "entrambi i nodi definiti in un file del progetto (niente simboli esterni o non risolti)",
+    "file sorgente esistente e riga indicata presente",
+    "il simbolo collegato compare alla riga indicata (o nelle 2 successive)"
+  ],
+  "archi_grezzi": 3710,
+  "archi_conservati": 2346,
+  "scarti": {
+    "dedotto (INFERRED)": 903,
+    "nodo mancante (simbolo non definito nel progetto)": 461
+  },
+  "nodi": 1270,
+  "comunita": 89,
+  "sqlite_redis": "escluso: nessun riferimento a Redis nel codice, nelle configurazioni o nei lockfile"
+}

@@ -340,6 +340,18 @@ frontend\       Vite + React + TypeScript + Tailwind, compilato in statico e ser
 
 Le anteprime di upload non confermate vengono eliminate dopo 24 ore.
 
+## Grafo del progetto
+
+Mappa del codice e dei documenti generata con [graphify](https://github.com/safishamsi/graphify).
+Per esplorarla scarica il file `graph.html` e aprilo nel browser: GitHub ne mostra solo il sorgente.
+
+| Versione | Contenuto | File |
+|---|---|---|
+| Completa | codice + documenti (brief, piano, decisioni), con collegamenti dedotti | [report](graphify-out/GRAPH_REPORT.md) · [graph.html](graphify-out/graph.html) · [graph.json](graphify-out/graph.json) |
+| Solo codice, verificata | soli collegamenti `EXTRACTED` controllati riga per riga sui sorgenti; niente collegamenti dedotti né simboli esterni | [graph.html](graphify-codice/graphify-out/graph.html) · [graph.json](graphify-codice/graphify-out/graph.json) · [criteri e scarti](graphify-codice/graphify-out/verifica_filtro.json) |
+
+Guida per chi inizia, scritta a partire dal grafo: [README-FROM-GRAPH.md](README-FROM-GRAPH.md).
+
 ## Risoluzione dei problemi
 
 | Problema | Soluzione |

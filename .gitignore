@@ -22,3 +22,15 @@ frontend/*.tsbuildinfo
 # Segreti e configurazione locale
 .env
 .claude/settings.local.json
+
+# graphify: si pubblicano solo grafo, report e verifica (non cache, manifest e file interni
+# che contengono percorsi locali)
+graphify-out/*
+!graphify-out/graph.html
+!graphify-out/graph.json
+!graphify-out/GRAPH_REPORT.md
+graphify-codice/graphify-out/*
+!graphify-codice/graphify-out/graph.html
+!graphify-codice/graphify-out/graph.json
+!graphify-codice/graphify-out/graph_grezzo.json
+!graphify-codice/graphify-out/verifica_filtro.json
