@@ -40,8 +40,12 @@ class HandlerRegistry:
 
 def default_registry(settings: Settings, db: Database) -> HandlerRegistry:
     """Gestori dell'app. Le fasi successive (analisi, separazione, testi) si registrano qui."""
+    from app.analysis import jobs as analysis_jobs
     from app.importing import jobs as import_jobs
+    from app.separation import jobs as separation_jobs
 
     registry = HandlerRegistry()
     import_jobs.register(registry, settings, db)
+    analysis_jobs.register(registry, settings, db)
+    separation_jobs.register(registry, settings, db)
     return registry

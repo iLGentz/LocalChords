@@ -22,6 +22,7 @@ from app.config import Settings
 from app.db.models import (
     AssetKind,
     AudioAsset,
+    Job,
     JobStatus,
     Song,
     SongStatus,
@@ -29,7 +30,7 @@ from app.db.models import (
 )
 from app.db.session import Database
 from app.errors import AppError
-from app.importing.service import IMPORT_FILE, IMPORT_URL, SongService
+from app.importing.service import ANALYZE, IMPORT_FILE, IMPORT_URL, SEPARATE, SongService
 from app.importing.validation import check_not_silent, check_probe
 from app.media.ffmpeg import MediaTools, ProbeResult
 from app.storage.files import NORMALIZED_NAME, Storage, sha256_file
@@ -91,8 +92,29 @@ def run_import(settings: Settings, db: Database, ctx: JobContext) -> None:
         if song is None:
             raise JobError("song_not_found", "Il brano è stato eliminato durante l'importazione.")
         song.duration_s = probe.get("duration_s") or song.duration_s
-        song.status = SongStatus.READY
+        # Dopo l'importazione: separazione (se automatica e possibile) poi analisi,
+        # altrimenti subito l'analisi sul mix.
+        song.status = SongStatus.PROCESSING
+        next_kind = SEPARATE if _auto_separation(settings, db, song.duration_s) else ANALYZE
+        payload: dict[str, Any] = {"reanalyze": True} if next_kind == SEPARATE else {}
+        s.add(
+            Job(kind=next_kind, song_id=song_id, payload=payload, checkpoint={}, message="In coda")
+        )
     report("finalize", 1.0)
+
+
+def _auto_separation(settings: Settings, db: Database, duration_s: float | None) -> bool:
+    """Vero se l'utente vuole la separazione automatica e il modello è già scaricato."""
+    from app.preferences import load as load_prefs
+    from app.separation.jobs import plan_separation
+
+    if not load_prefs(db, settings).auto_separate:
+        return False
+    try:
+        return plan_separation(settings, db, duration_s).model_installed
+    except AppError as exc:
+        log.info("separazione automatica saltata", extra={"reason": exc.code})
+        return False
 
 
 # ----------------------------------------------------------------------- fasi

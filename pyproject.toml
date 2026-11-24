@@ -3,7 +3,7 @@ name = "localchords"
 version = "0.1.0"
 description = "App desktop local-first per Windows: accordi, testi sincronizzati, tab e stem da un file audio."
 readme = "README.md"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.165",
     "uvicorn>=0.54",
@@ -12,12 +12,20 @@ dependencies = [
     "sqlalchemy>=2.1",
     "alembic>=1.20",
     "pywebview>=6.2",
+    "librosa>=0.11",
+    "soundfile>=0.13",
+    "numpy>=2.0",
+    "scipy>=1.14",
 ]
 
 [project.optional-dependencies]
 # Adapter YouTube, disattivato di default (setup.ps1 -YouTube). L'extra "deno" installa il
 # runtime JavaScript che yt-dlp richiede per YouTube.
 youtube = ["yt-dlp[default,deno]>=2026.11.23"]
+# Runtime di separazione: uno solo dei due (setup.ps1 sceglie in base alla GPU).
+# audioread: usato da audio-separator, non pi?? installato da librosa 1.0.
+cpu = ["audio-separator[cpu]>=0.48", "torch>=2.14,<2.15", "audioread>=3.0"]
+nvidia = ["audio-separator[gpu]>=0.48", "torch>=2.14,<2.15", "audioread>=3.0"]
 
 [project.scripts]
 localchords = "app.desktop:main"
@@ -42,6 +50,23 @@ packages = ["app"]
 [tool.uv]
 # Python solo dalla cartella dell'app (vedi setup.ps1), mai quello di sistema.
 python-preference = "only-managed"
+conflicts = [[{ extra = "cpu" }, { extra = "nvidia" }]]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu126", extra = "nvidia" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -52,19 +77,20 @@ filterwarnings = [
 ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 packages = ["app"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["webview", "webview.*", "yt_dlp", "yt_dlp.*"]
+module = ["webview", "webview.*", "yt_dlp", "yt_dlp.*", "soundfile", "librosa", "librosa.*", "audio_separator", "audio_separator.*", "onnxruntime", "torch", "torch.*"]
 ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 extend-exclude = ["app/db/migrations/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N"]
+

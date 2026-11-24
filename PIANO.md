@@ -17,7 +17,7 @@ Decisioni prese il 24/11/2026, che sostituiscono le parti corrispondenti di `BRI
 ## 2. Stack (cambi rispetto al brief già approvati)
 | Area | Scelta | Al posto di |
 |---|---|---|
-| Distribuzione | **Installazione nativa con `uv`**: Python 3.11 isolato nella cartella dell'app, `setup.ps1` e `LocalChords.bat` | Docker Compose |
+| Distribuzione | **Installazione nativa con `uv`**: Python 3.12 isolato (era 3.11, cambiato il 24/11/2026: vedi docs/DECISIONI.md) nella cartella dell'app, `setup.ps1` e `LocalChords.bat` | Docker Compose |
 | Shell desktop | **pywebview** (Edge WebView2) che apre la UI in una finestra nativa | Browser |
 | Frontend | **Vite + React + TypeScript**, Tailwind, shadcn/ui, compilato in statico e servito da FastAPI | Next.js |
 | Backend | FastAPI, Pydantic v2, SQLAlchemy 2 + Alembic, SQLite | (invariato) |

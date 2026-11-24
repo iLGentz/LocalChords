@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import shutil
 
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select
 
 from app.db.base import new_id
 from app.db.models import (
@@ -17,6 +17,7 @@ from app.db.models import (
     Song,
     SongStatus,
     SourceType,
+    Stem,
 )
 from app.db.session import Database
 from app.errors import AppError
@@ -28,6 +29,9 @@ log = logging.getLogger(__name__)
 
 IMPORT_FILE = "import_file"
 IMPORT_URL = "import_url"
+ANALYZE = "analyze"
+SEPARATE = "separate"
+DOWNLOAD_MODEL = "download_model"
 ACTIVE_JOB_STATUSES = RUNNING_JOB_STATUSES | {JobStatus.QUEUED}
 
 
@@ -216,23 +220,77 @@ class SongService:
             return song
 
     def retry(self, song_id: str) -> str:
-        """Rimette in coda l'importazione di un brano fallito o annullato."""
+        """Rimette in coda un brano fallito o annullato: l'analisi se l'audio è già
+        importato, altrimenti l'importazione."""
         song = self.get(song_id)
         if song.status not in (SongStatus.FAILED, SongStatus.CANCELLED):
             raise AppError(
                 "song_not_retryable",
-                "Si può riprovare solo un'importazione fallita o annullata.",
+                "Si può riprovare solo un'elaborazione fallita o annullata.",
                 {"status": song.status.value},
             )
         self._ensure_idle(song_id)
-        kind = IMPORT_URL if song.source_type is SourceType.YOUTUBE else IMPORT_FILE
-        payload = {"url": song.source_url} if kind == IMPORT_URL else {}
+        normalized = self.audio_asset(song_id)
+        last = self.latest_jobs([song_id]).get(song_id)
+        if (
+            normalized is not None
+            and normalized.kind is AssetKind.NORMALIZED
+            and last is not None
+            and last.kind == SEPARATE
+        ):
+            kind, payload, status = SEPARATE, dict(last.payload), SongStatus.PROCESSING
+        elif normalized is not None and normalized.kind is AssetKind.NORMALIZED:
+            kind, payload, status = ANALYZE, {}, SongStatus.PROCESSING
+        elif song.source_type is SourceType.YOUTUBE:
+            kind, payload, status = IMPORT_URL, {"url": song.source_url}, SongStatus.IMPORTING
+        else:
+            kind, payload, status = IMPORT_FILE, {}, SongStatus.IMPORTING
         job_id = self.queue.enqueue(kind, payload, song_id=song_id)
         with self.db.session() as s:
             current = s.get(Song, song_id)
             if current is not None:
-                current.status = SongStatus.IMPORTING
+                current.status = status
         return job_id
+
+    def analyze(self, song_id: str) -> str:
+        """Rilancia l'analisi (sostituisce i risultati precedenti)."""
+        self.get(song_id)
+        normalized = self.audio_asset(song_id)
+        if normalized is None or normalized.kind is not AssetKind.NORMALIZED:
+            raise AppError("audio_not_found", "Il brano non ha ancora un audio importato.")
+        self._ensure_idle(song_id)
+        job_id = self.queue.enqueue(ANALYZE, {}, song_id=song_id)
+        with self.db.session() as s:
+            current = s.get(Song, song_id)
+            if current is not None:
+                current.status = SongStatus.PROCESSING
+        return job_id
+
+    def separate(self, song_id: str, payload: dict[str, object]) -> str:
+        """Accoda la separazione in stem (poi la nuova analisi)."""
+        self.get(song_id)
+        normalized = self.audio_asset(song_id)
+        if normalized is None or normalized.kind is not AssetKind.NORMALIZED:
+            raise AppError("audio_not_found", "Il brano non ha ancora un audio importato.")
+        self._ensure_idle(song_id)
+        job_id = self.queue.enqueue(SEPARATE, dict(payload), song_id=song_id)
+        with self.db.session() as s:
+            current = s.get(Song, song_id)
+            if current is not None:
+                current.status = SongStatus.PROCESSING
+        return job_id
+
+    def delete_stems(self, song_id: str) -> int:
+        """Elimina gli stem (file e righe). Restituisce i byte liberati."""
+        self.get(song_id)
+        self._ensure_idle(song_id)
+        with self.db.session() as s:
+            freed = sum(
+                st.size_bytes or 0 for st in s.scalars(select(Stem).where(Stem.song_id == song_id))
+            )
+            s.execute(delete(Stem).where(Stem.song_id == song_id))
+        remove_tree(self.storage.root / "stems" / song_id)
+        return int(freed)
 
     def delete(self, song_id: str) -> None:
         """Elimina brano, dati e file. Se un job è in esecuzione chiede di annullarlo e

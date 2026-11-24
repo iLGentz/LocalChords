@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 
+import { AnalysisPanel } from "@/components/AnalysisPanel";
+import { StemsPanel } from "@/components/StemsPanel";
 import { Button, Notice, ProgressBar, TextField } from "@/components/ui";
 import { api, asApiError, isJobActive, type ApiError, type Job, type Song } from "@/lib/api";
 import { formatDuration, formatEta, JOB_STATUS_LABEL, SONG_STATUS_LABEL } from "@/lib/format";
@@ -110,27 +112,28 @@ export function SongView({ song, onChanged, onDeleted }: SongViewProps) {
       {(song.status === "failed" || song.status === "cancelled") && (
         <Notice
           tone={song.status === "failed" ? "error" : "info"}
-          title={song.status === "failed" ? "Importazione non riuscita" : "Importazione annullata"}
+          title={
+            song.status === "failed" ? "Elaborazione non riuscita" : "Elaborazione annullata"
+          }
           action={
             <Button variant="secondary" onClick={retry} disabled={busy}>
               Riprova
             </Button>
           }
         >
-          {job?.error?.message ?? "Puoi riprovare l'importazione."}
+          {job?.error?.message ?? "Puoi riprovare."}
         </Notice>
       )}
 
-      {song.status === "ready" && song.audio_url && (
-        <section className="rounded-lg border border-line bg-surface p-4" aria-label="Ascolto">
-          <p className="mb-2 text-xs text-ink-muted">
-            Ascolto dell'audio importato. Accordi, testi e stem arriveranno con l'analisi.
-          </p>
-          <audio controls preload="metadata" src={song.audio_url} className="w-full">
-            Il tuo sistema non riesce a riprodurre questo audio.
-          </audio>
-        </section>
+      {song.status === "ready" && (
+        <AnalysisPanel
+          song={song}
+          busy={busy}
+          onReanalyze={() => void run(() => api("POST", `/songs/${song.id}/analyze`), onChanged)}
+        />
       )}
+
+      {song.status === "ready" && <StemsPanel song={song} onChanged={onChanged} />}
     </article>
   );
 }

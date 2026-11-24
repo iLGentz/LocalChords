@@ -49,7 +49,7 @@ export function asApiError(err: unknown): ApiError {
   return new ApiError(0, { code: "unknown", message: String(err), detail: null });
 }
 
-type Method = "GET" | "POST" | "PATCH" | "DELETE";
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export async function api<T>(
   method: Method,
@@ -222,4 +222,145 @@ export const ACTIVE_JOB_STATUSES: readonly JobStatus[] = [
 
 export function isJobActive(job: Job | null): boolean {
   return job !== null && ACTIVE_JOB_STATUSES.includes(job.status);
+}
+
+export interface BeatPoint {
+  time_s: number;
+  is_downbeat: boolean;
+  bar: number | null;
+}
+
+export interface ChordEvent {
+  id: string;
+  start_s: number;
+  end_s: number;
+  chord: string;
+  original_chord: string | null;
+  confidence: number | null;
+  beat_position: number | null;
+  origin: "analysis" | "user";
+}
+
+export interface SectionInfo {
+  id: string;
+  name: string;
+  color: string;
+  start_s: number;
+  end_s: number;
+  origin: "analysis" | "user";
+}
+
+export interface Analysis {
+  song_id: string;
+  analyzed: boolean;
+  bpm: number | null;
+  bpm_confidence: number | null;
+  beats_per_bar: number;
+  beat_offset_s: number;
+  key: string | null;
+  key_confidence: number | null;
+  beats: BeatPoint[];
+  chords: ChordEvent[];
+  sections: SectionInfo[];
+}
+
+export interface WaveformPeaks {
+  version: number;
+  duration_s: number;
+  peaks_per_second: number;
+  peaks: number[];
+}
+
+export type DeviceChoice = "auto" | "nvidia" | "cpu";
+export type ProfileChoice = "auto" | "light" | "balanced" | "max";
+
+export interface ProcessingPreferences {
+  device: DeviceChoice;
+  profile: ProfileChoice;
+  auto_separate: boolean;
+}
+
+export interface ProfileInfo {
+  id: "light" | "balanced" | "max";
+  label: string;
+  separation_model: string;
+  device: "cpu" | "cuda";
+  whisper: string;
+  sections: string;
+  available: boolean;
+  reason: string | null;
+}
+
+export interface HardwareReport {
+  info: {
+    cpu: string;
+    cpu_cores: number;
+    ram_gb: number | null;
+    gpus: { name: string; vram_mb: number | null; driver: string | null }[];
+    runtime: {
+      torch_version: string | null;
+      torch_cuda: boolean;
+      torch_cuda_device: string | null;
+      onnx_providers: string[];
+      separator_installed: boolean;
+      error: string | null;
+    };
+    profiles: ProfileInfo[];
+    recommended: "light" | "balanced" | "max";
+  };
+  installed_runtime: string;
+  separation_runtime: boolean;
+  preferences: ProcessingPreferences;
+  estimates: { profile: string; device: string; model: string; seconds_for_4min: number }[];
+}
+
+export interface ModelInfo {
+  id: string;
+  label: string;
+  description: string;
+  size_mb: number;
+  license: string;
+  commercial_use: boolean;
+  profiles: string[];
+  installed: boolean;
+  size_on_disk: number;
+  download_job: Job | null;
+}
+
+export interface StorageReport {
+  data_dir: string;
+  categories: Record<string, number>;
+  total: number;
+  disk_free: number;
+  disk_total: number;
+  songs: {
+    song_id: string;
+    title: string;
+    artist: string | null;
+    audio: number;
+    stems: number;
+    waveforms: number;
+    total: number;
+  }[];
+  cleanable: string[];
+}
+
+export interface StemInfo {
+  type: "vocals" | "drums" | "bass" | "guitar" | "piano" | "other";
+  status: string;
+  model: string | null;
+  size_bytes: number | null;
+  url: string;
+}
+
+export interface SeparationPlan {
+  model_id: string;
+  model_label: string;
+  model_size_mb: number;
+  model_installed: boolean;
+  model_license: string;
+  device: "cpu" | "cuda";
+  profile: string;
+  eta_s: number | null;
+  note: string | null;
 }

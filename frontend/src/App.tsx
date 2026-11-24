@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { CatalogSidebar } from "@/components/CatalogSidebar";
+import { HardwareBanner } from "@/components/HardwareBanner";
 import { ImportPanel } from "@/components/ImportPanel";
+import { SettingsView } from "@/components/SettingsView";
 import { SongView } from "@/components/SongView";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Notice } from "@/components/ui";
+import { Button, Notice } from "@/components/ui";
 import { useHealth, type HealthState } from "@/hooks/useHealth";
 import { useSongs } from "@/hooks/useSongs";
 import type { Song } from "@/lib/api";
 
-type View = { kind: "import" } | { kind: "song"; id: string };
+type View = { kind: "import" } | { kind: "settings" } | { kind: "song"; id: string };
 
 function SystemStatus({ state }: { state: HealthState }) {
   if (state.kind === "loading") {
@@ -94,10 +96,20 @@ export function App() {
           </span>
           {version && <span className="text-xs text-ink-muted">v{version}</span>}
         </div>
-        <div className="flex flex-wrap items-center gap-2" aria-label="Stato del sistema">
-          <SystemStatus state={health} />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2" aria-label="Stato del sistema">
+            <SystemStatus state={health} />
+          </div>
+          <Button
+            variant={view.kind === "settings" ? "secondary" : "ghost"}
+            aria-current={view.kind === "settings" ? "page" : undefined}
+            onClick={() => setView({ kind: "settings" })}
+          >
+            Impostazioni
+          </Button>
         </div>
       </header>
+      <HardwareBanner onOpenSettings={() => setView({ kind: "settings" })} />
 
       <div className="flex min-h-0 flex-1">
         <CatalogSidebar
@@ -138,6 +150,8 @@ export function App() {
               }}
             />
           )}
+
+          {view.kind === "settings" && <SettingsView onStorageChanged={refresh} />}
 
           {view.kind === "song" && selected && (
             <SongView

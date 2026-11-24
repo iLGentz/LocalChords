@@ -1,0 +1,142 @@
+import { Fragment, useMemo } from "react";
+
+import type { Analysis, ChordEvent, SectionInfo } from "@/lib/api";
+
+interface Bar {
+  index: number;
+  start: number;
+  end: number;
+  chords: ChordEvent[];
+  /** Accordo che prosegue dalla battuta precedente (nessun cambio in questa battuta). */
+  carried: ChordEvent | null;
+  section: SectionInfo | null;
+}
+
+function buildBars(analysis: Analysis): Bar[] {
+  const { beats, chords, sections } = analysis;
+  const starts = beats.filter((b) => b.is_downbeat).map((b) => b.time_s);
+  const first = beats[0];
+  if (first && starts.length > 0 && first.time_s < (starts[0] ?? 0) - 0.05) {
+    starts.unshift(first.time_s); // anacrusi
+  }
+  const songEnd = Math.max(chords.at(-1)?.end_s ?? 0, beats.at(-1)?.time_s ?? 0);
+  const bars: Bar[] = [];
+  let sectionIdx = -1;
+  starts.forEach((start, i) => {
+    const end = starts[i + 1] ?? songEnd;
+    const inBar = chords.filter((c) => c.start_s >= start - 0.05 && c.start_s < end - 0.05);
+    const carried =
+      inBar.length === 0 || (inBar[0]?.start_s ?? 0) > start + 0.05
+        ? (chords.find((c) => c.start_s <= start + 0.05 && c.end_s > start + 0.05) ?? null)
+        : null;
+    let section: SectionInfo | null = null;
+    while (sectionIdx + 1 < sections.length && (sections[sectionIdx + 1]?.start_s ?? Infinity) < end - 0.05) {
+      sectionIdx += 1;
+      section = sections[sectionIdx] ?? null;
+    }
+    bars.push({ index: i, start, end, chords: inBar, carried, section });
+  });
+  return bars;
+}
+
+interface ChordSheetProps {
+  analysis: Analysis;
+  time: number;
+  onSeek: (time: number) => void;
+}
+
+/** Accordi per battuta, con le sezioni e l'evidenziazione della posizione corrente. */
+export function ChordSheet({ analysis, time, onSeek }: ChordSheetProps) {
+  const bars = useMemo(() => buildBars(analysis), [analysis]);
+  const visible = (c: ChordEvent): boolean => c.chord !== "N";
+
+  if (bars.length === 0) {
+    return (
+      <ul className="flex flex-wrap gap-2" aria-label="Accordi">
+        {analysis.chords.filter(visible).map((c) => (
+          <li key={c.id}>
+            <ChordChip chord={c} active={time >= c.start_s && time < c.end_s} onSeek={onSeek} />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap gap-y-2" aria-label="Accordi per battuta" role="list">
+      {bars.map((bar) => {
+        const activeBar = time >= bar.start && time < bar.end;
+        return (
+          <Fragment key={bar.index}>
+            {bar.section && (
+              <div className="mt-3 flex basis-full items-center gap-2 first:mt-0" role="presentation">
+                <span className="size-2.5 rounded-sm" style={{ background: bar.section.color }} />
+                <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  {bar.section.name}
+                </span>
+              </div>
+            )}
+            <div
+              role="listitem"
+              className={`flex h-12 w-1/4 min-w-0 items-center gap-1 border-l px-2 ${
+                activeBar ? "border-accent bg-accent/10" : "border-line"
+              }`}
+            >
+              {bar.carried && visible(bar.carried) && (
+                <button
+                  type="button"
+                  onClick={() => onSeek(bar.start)}
+                  className="truncate font-mono text-sm text-ink-muted/60 hover:text-ink-muted"
+                  title={`Prosegue: ${bar.carried.chord}`}
+                >
+                  {bar.carried.chord}
+                </button>
+              )}
+              {bar.chords.filter(visible).map((c) => (
+                <ChordChip
+                  key={c.id}
+                  chord={c}
+                  active={time >= c.start_s && time < c.end_s}
+                  onSeek={onSeek}
+                />
+              ))}
+            </div>
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChordChip({
+  chord,
+  active,
+  onSeek,
+}: {
+  chord: ChordEvent;
+  active: boolean;
+  onSeek: (t: number) => void;
+}) {
+  const lowConfidence = chord.confidence !== null && chord.confidence < 0.4;
+  return (
+    <button
+      type="button"
+      onClick={() => onSeek(chord.start_s)}
+      aria-current={active ? "true" : undefined}
+      title={
+        lowConfidence
+          ? `${chord.chord} — rilevamento incerto (${Math.round((chord.confidence ?? 0) * 100)}%)`
+          : chord.chord
+      }
+      className={`truncate rounded px-1.5 py-0.5 font-mono text-sm font-semibold transition-colors ${
+        active
+          ? "bg-accent text-ground"
+          : lowConfidence
+            ? "text-ink underline decoration-warn/70 decoration-dotted underline-offset-4 hover:bg-raised"
+            : "text-ink hover:bg-raised"
+      }`}
+    >
+      {chord.chord}
+    </button>
+  );
+}

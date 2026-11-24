@@ -94,6 +94,12 @@ class JobContext:
             if self._queue.is_cancel_requested(self.job_id):
                 raise JobCancelled
 
+    def phase_result(self, name: str) -> Any:
+        """Risultato di una fase già completata (in questa esecuzione o in una precedente)."""
+        if name not in self._completed:
+            raise KeyError(f"Fase non completata: {name}")
+        return self._data.get(name)
+
     def run_phase(self, name: str, fn: Callable[[], T]) -> T:
         """Esegue una fase una sola volta: se già completata in un tentativo precedente,
         restituisce il risultato salvato. Il risultato deve essere serializzabile in JSON."""

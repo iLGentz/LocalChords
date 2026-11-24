@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 
 from app import __version__
 from app.api.errors import ApiError, install_error_handlers
-from app.api.routers import health, jobs, songs
+from app.api.routers import analysis, health, jobs, songs, system
 from app.config import Settings, get_settings
 from app.db.session import Database
 from app.importing.service import SongService
@@ -64,6 +64,8 @@ def create_app(settings: Settings | None = None, db: Database | None = None) -> 
     api.include_router(health.router)
     api.include_router(jobs.router)
     api.include_router(songs.router)
+    api.include_router(analysis.router)
+    api.include_router(system.router)
 
     @api.api_route("/{path:path}", methods=["GET", "POST", "PATCH", "PUT", "DELETE"])
     def _api_not_found(path: str) -> None:
