@@ -16,12 +16,20 @@ from app.db.models import Job, JobStatus, Song, StemType
 from app.errors import AppError
 from app.hardware import detect
 from app.importing.service import ACTIVE_JOB_STATUSES, DOWNLOAD_MODEL
+from app.lyrics.models import (
+    WHISPER_LICENSE,
+    WHISPER_MODELS,
+    whisper_dir,
+    whisper_installed,
+    whisper_size_on_disk,
+)
 from app.preferences import ProcessingPreferences
 from app.preferences import load as load_prefs
 from app.preferences import save as save_prefs
 from app.separation.jobs import measured_ratio, runtime_installed
 from app.separation.models import MODELS, is_installed, models_dir, size_on_disk
 from app.storage import usage
+from app.storage.files import remove_tree
 
 router = APIRouter(tags=["system"])
 
@@ -126,6 +134,20 @@ def list_models(settings: SettingsDep, db: DatabaseDep) -> list[ModelOut]:
             download_job=JobOut.from_job(active[m.id]) if m.id in active else None,
         )
         for m in MODELS.values()
+    ] + [
+        ModelOut(
+            id=w.id,
+            label=w.label,
+            description=w.description,
+            size_mb=w.size_mb,
+            license=WHISPER_LICENSE,
+            commercial_use=True,
+            profiles=[p.value for p in w.profiles],
+            installed=whisper_installed(w, settings.data_dir),
+            size_on_disk=whisper_size_on_disk(w, settings.data_dir),
+            download_job=JobOut.from_job(active[w.id]) if w.id in active else None,
+        )
+        for w in WHISPER_MODELS.values()
     ]
 
 
@@ -133,10 +155,9 @@ def list_models(settings: SettingsDep, db: DatabaseDep) -> list[ModelOut]:
 def download_model(
     model_id: str, settings: SettingsDep, db: DatabaseDep, queue: QueueDep
 ) -> JobOut:
-    spec = MODELS.get(model_id)
-    if spec is None:
+    if model_id not in MODELS and model_id not in WHISPER_MODELS:
         raise AppError("model_not_found", "Modello sconosciuto.")
-    if not runtime_installed():
+    if model_id in MODELS and not runtime_installed():
         raise AppError(
             "separation_runtime_missing",
             "Il runtime di separazione non è installato: riesegui setup.ps1.",
@@ -150,18 +171,23 @@ def download_model(
 
 @router.delete("/models/{model_id}", status_code=204)
 def delete_model(model_id: str, settings: SettingsDep, db: DatabaseDep) -> Response:
+    whisper = WHISPER_MODELS.get(model_id)
     spec = MODELS.get(model_id)
-    if spec is None:
+    if whisper is None and spec is None:
         raise AppError("model_not_found", "Modello sconosciuto.")
     with db.read_session() as s:
         busy = s.scalars(
             select(Job).where(
-                Job.kind.in_(("separate", DOWNLOAD_MODEL)),
+                Job.kind.in_(("separate", "lyrics", DOWNLOAD_MODEL)),
                 Job.status.in_(ACTIVE_JOB_STATUSES - {JobStatus.QUEUED}),
             )
         ).first()
     if busy is not None:
         raise AppError("model_busy", "Una separazione o un download è in corso: riprova dopo.")
+    if whisper is not None:
+        remove_tree(whisper_dir(settings.data_dir, whisper))
+        return Response(status_code=204)
+    assert spec is not None
     directory = models_dir(settings.data_dir)
     for name in spec.files:
         (directory / name).unlink(missing_ok=True)

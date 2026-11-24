@@ -364,3 +364,46 @@ export interface SeparationPlan {
   eta_s: number | null;
   note: string | null;
 }
+
+export interface LyricWord {
+  id: string;
+  text: string;
+  start_s: number | null;
+  end_s: number | null;
+  confidence: number | null;
+  edited: boolean;
+  origin: "analysis" | "user";
+}
+
+export interface LyricLine {
+  id: string;
+  text: string;
+  start_s: number | null;
+  end_s: number | null;
+  original_text: string | null;
+  edited: boolean;
+  origin: "analysis" | "user";
+  words: LyricWord[];
+}
+
+export type LyricsStatus =
+  | "aligned"
+  | "line_synced"
+  | "unsynced"
+  | "transcribed"
+  | "instrumental"
+  | "no_voice"
+  | "model_missing";
+
+export interface Lyrics {
+  source: "lrclib" | "transcription" | "user" | null;
+  status: LyricsStatus | null;
+  note: "lrclib_disabled" | "lrclib_error" | "not_found" | null;
+  language: string | null;
+  lrclib_enabled: boolean;
+  whisper: { model_id: string; label: string; size_mb: number; installed: boolean; device: string };
+  can_undo: boolean;
+  can_redo: boolean;
+  job: Job | null;
+  lines: LyricLine[];
+}

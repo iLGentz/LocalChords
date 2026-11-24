@@ -170,6 +170,33 @@ def _download(
 
 
 def run_download(settings: Settings, db: Database, ctx: JobContext) -> None:
+    from app.lyrics.models import WHISPER_MODELS, whisper_dir, whisper_installed
+
+    whisper = WHISPER_MODELS.get(str(ctx.payload.get("model_id")))
+    if whisper is not None:
+        if whisper_installed(whisper, settings.data_dir):
+            return
+        ctx.stage(
+            JobStatus.DOWNLOADING,
+            "download",
+            f"Download di {whisper.label} (~{whisper.size_mb} MB)",
+        )
+        run_child(
+            [
+                "download",
+                "--alias",
+                whisper.alias,
+                "--model-dir",
+                str(whisper_dir(settings.data_dir, whisper)),
+            ],
+            cpu_only=True,
+            on_progress=lambda f: ctx.progress(f),
+            should_stop=ctx.check,
+            module="app.lyrics.runner",
+        )
+        if not whisper_installed(whisper, settings.data_dir):
+            raise JobError("model_download_failed", f"Download di {whisper.label} incompleto.")
+        return
     spec = MODELS.get(str(ctx.payload.get("model_id")))
     if spec is None:
         raise JobError("model_not_found", "Modello sconosciuto.")

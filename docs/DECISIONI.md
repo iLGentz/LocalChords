@@ -10,6 +10,56 @@ fase 1 è stato verificato con quei test prima della rimozione; dalla fase 2 in 
 controlli sono solo statici (mypy strict, ruff, `tsc`, build) finché non si riprendono.
 La configurazione di pytest in `pyproject.toml` resta pronta.
 
+## Fase 5 — testi (24/11/2026)
+
+### faster-whisper invece di WhisperX
+WhisperX 3.8 richiede `torch~=2.8` (noi 2.14) e pyannote; l'allineamento CTC con wav2vec2
+richiederebbe torchaudio, che si ferma alla 2.11 e non ha build per torch 2.14. Installarli
+vorrebbe dire due versioni di PyTorch. Scelta: **faster-whisper** (MIT, CTranslate2, senza
+PyTorch), che dà i tempi di ogni parola (DTW sull'attenzione), più un allineamento testuale
+nostro tra testo di riferimento e parole trascritte. Precisione attesa inferiore a WhisperX
+sulle singole parole: va misurata sul PC di test; l'editor permette di correggere.
+faster-whisper è una dipendenza base (serve anche senza GPU); su CUDA usa le DLL cuBLAS/cuDNN
+incluse in PyTorch CUDA (da verificare sul PC di test).
+
+### Allineamento
+- Normalizzazione delle parole (minuscole, senza accenti e punteggiatura), allineamento
+  globale (Needleman-Wunsch) con somiglianza di stringa ≥ 0,6 come corrispondenza.
+- I tempi per riga di LRCLIB fanno da ancora: una parola trascritta a più di 2 s dalla sua
+  riga non viene abbinata.
+- Parole non riconosciute: tempi interpolati tra le vicine, in proporzione alla lunghezza;
+  ai bordi della riga al massimo 0,6 s per parola (verificato su un esempio sintetico).
+- Confidenza della parola = somiglianza × probabilità di Whisper; 0 per i tempi stimati.
+- Stati: `aligned`, `line_synced` (solo tempi di riga), `unsynced`, `transcribed` (testo
+  ricavato dalla trascrizione), `instrumental` (da LRCLIB), `no_voice`, `model_missing`.
+
+### Pipeline
+Il job `lyrics` parte al termine dell'analisi, salvo che il testo sia già stato modificato
+(la cronologia ha voci di testo). Non cambia lo stato del brano: accordi e audio restano
+utilizzabili mentre i testi vengono elaborati, e un errore del testo non rende il brano
+"fallito". Whisper gira in un processo figlio terminabile, come la separazione. Il modello
+dipende dal profilo (small / medium / large-v3-turbo) e si scarica solo su richiesta; senza
+modello si usano i tempi per riga di LRCLIB.
+
+### Editor e cronologia
+- `edit_history` generica: ogni operazione è un aggiornamento di campi (anche creare ed
+  eliminare, tramite `is_deleted`), quindi annulla = riapplicare `before`, ripristina =
+  riapplicare `after`. Un'operazione utente è un gruppo (es. cambiare il testo di una riga
+  ricostruisce le parole: un solo passo da annullare).
+- Pronta anche per accordi e sezioni (`chord`, `section`); quando l'analisi rigenera accordi
+  e sezioni, la loro cronologia viene rimossa.
+- Spostare l'inizio di una riga sposta le sue parole. Cambiare il testo conserva i tempi se il
+  numero di parole è uguale, altrimenti li distribuisce nella riga.
+- Posizioni spaziate di 1024 per inserire senza rinumerare.
+- Tutto ciò che produce il job (anche un testo incollato) è lo stato "originale"; sono
+  `user` solo righe e parole aggiunte a mano. "Ripristina originale" elimina queste ultime e
+  riporta le altre ai valori originali.
+
+### LRCLIB
+User-Agent generico (`LocalChords/<versione>`), nessun dato del PC o dell'utente. Ricerca
+esatta (titolo, artista, album, durata), poi ricerca libera filtrata per durata (± 4 s),
+preferendo i testi sincronizzati. Errori di rete: si prosegue senza testo di riferimento.
+
 ## Fase 4 — separazione, hardware, spazio (24/11/2026)
 
 ### audio-separator con PyTorch, non ONNX

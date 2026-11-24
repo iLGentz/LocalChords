@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { ChordSheet } from "@/components/ChordSheet";
 import { Button, Notice } from "@/components/ui";
 import { Waveform } from "@/components/Waveform";
 import { useAnalysis } from "@/hooks/useAnalysis";
-import { useMediaTime } from "@/hooks/useMediaTime";
 import type { Song } from "@/lib/api";
 
 function confidenceLabel(value: number | null): { text: string; tone: string } {
@@ -18,19 +17,18 @@ interface AnalysisPanelProps {
   song: Song;
   onReanalyze: () => void;
   busy: boolean;
+  media: HTMLAudioElement | null;
+  onMediaRef: (el: HTMLAudioElement | null) => void;
+  time: number;
+  onSeek: (t: number) => void;
+  /** Contenuto mostrato sotto gli accordi (es. i testi), che condivide la riproduzione. */
+  children?: ReactNode;
 }
 
-export function AnalysisPanel({ song, onReanalyze, busy }: AnalysisPanelProps) {
+export function AnalysisPanel(props: AnalysisPanelProps) {
+  const { song, onReanalyze, busy, media, onMediaRef: setMedia, time, onSeek: seek, children } = props;
   const state = useAnalysis(song.id, song.updated_at);
-  const [media, setMedia] = useState<HTMLAudioElement | null>(null);
-  const time = useMediaTime(media);
   const [confirmReanalyze, setConfirmReanalyze] = useState(false);
-
-  const seek = (t: number): void => {
-    if (!media) return;
-    media.currentTime = t;
-    if (media.paused) void media.play().catch(() => undefined);
-  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -93,6 +91,8 @@ export function AnalysisPanel({ song, onReanalyze, busy }: AnalysisPanelProps) {
           )}
         </section>
       )}
+
+      {children}
 
       {state.kind === "ready" && (
         <div className="flex justify-end">

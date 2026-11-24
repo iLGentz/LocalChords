@@ -31,6 +31,7 @@ from app.db.models import (
     AudioAsset,
     Beat,
     ChordEvent,
+    Job,
     JobStatus,
     Origin,
     Section,
@@ -42,6 +43,7 @@ from app.db.models import (
     TimingSample,
 )
 from app.db.session import Database
+from app.editing.history import forget, has_edits
 from app.importing.service import ANALYZE
 from app.storage.files import Storage
 from app.worker.context import JobContext, JobError
@@ -117,6 +119,25 @@ def run_analysis(settings: Settings, db: Database, ctx: JobContext) -> None:
         done_weight += weight
     ctx.progress(1.0, eta_s=0)
     _set_song_status(db, song_id, SongStatus.READY)
+    _enqueue_lyrics(db, song_id)
+
+
+def _enqueue_lyrics(db: Database, song_id: str) -> None:
+    """Testi dopo l'analisi, salvo che l'utente li abbia già modificati."""
+    from app.lyrics.jobs import LYRIC_TYPES, LYRICS
+
+    with db.session() as s:
+        if has_edits(s, song_id, LYRIC_TYPES):
+            return
+        s.add(
+            Job(
+                kind=LYRICS,
+                song_id=song_id,
+                payload={"search": True},
+                checkpoint={},
+                message="In coda",
+            )
+        )
 
 
 _MESSAGES = {
@@ -194,6 +215,7 @@ def _phase_save(
             raise JobError("song_not_found", "Il brano è stato eliminato durante l'analisi.")
         for model in (Beat, ChordEvent, Section):
             s.execute(delete(model).where(model.song_id == song_id))
+        forget(s, song_id, ("chord", "section"))
         if grid.times:
             s.execute(
                 insert(Beat),

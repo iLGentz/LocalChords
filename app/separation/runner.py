@@ -34,6 +34,7 @@ def run_child(
     on_progress: Callable[[float], None],
     should_stop: Callable[[], None],
     cpu_threads: int = 0,
+    module: str = "app.separation.runner",
 ) -> dict[str, Any]:
     """Esegue il runner e restituisce il JSON finale. ``should_stop`` può sollevare
     un'eccezione: il processo figlio viene terminato e l'eccezione propagata."""
@@ -45,7 +46,7 @@ def run_child(
         for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS"):
             env[var] = str(cpu_threads)
     proc = subprocess.Popen(
-        [sys.executable, "-m", "app.separation.runner", *args],
+        [sys.executable, "-m", module, *args],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,

@@ -48,3 +48,23 @@ export const SONG_STATUS_LABEL: Record<SongStatus, string> = {
   failed: "Errore",
   cancelled: "Annullato",
 };
+
+/** "m:ss.cc" per gli editor di tempi. */
+export function formatTimestamp(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds)) return "";
+  const m = Math.floor(seconds / 60);
+  const s = seconds - m * 60;
+  return `${m}:${s.toFixed(2).padStart(5, "0")}`;
+}
+
+/** Interpreta "m:ss.cc", "ss.cc" o vuoto (null). `undefined` se il formato non è valido. */
+export function parseTimestamp(text: string): number | null | undefined {
+  const value = text.trim().replace(",", ".");
+  if (value === "") return null;
+  const match = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(value);
+  if (!match) return undefined;
+  const minutes = match[1] ? Number(match[1]) : 0;
+  const secs = Number(match[2]);
+  if (match[1] && secs >= 60) return undefined;
+  return Math.round((minutes * 60 + secs) * 1000) / 1000;
+}

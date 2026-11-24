@@ -4,14 +4,14 @@ App desktop **per Windows 10/11 (x64)**, local-first, che trasforma un file audi
 testi sincronizzati, tab, diagrammi e 6 stem con mixer e strumenti di pratica.
 Tutto gira sul tuo PC: nessun account, nessun servizio cloud obbligatorio.
 
-> **Stato:** fase 4 di 10. Scheletro, importazione da file locale (e da YouTube, se
+> **Stato:** fase 5 di 10. Scheletro, importazione da file locale (e da YouTube, se
 > attivato), analisi (beat grid, BPM, tonalità, accordi, sezioni, waveform), separazione in
-> 6 stem, rilevamento dell'hardware con profili e gestione dello spazio su disco. Testi e player
-> completo arrivano nelle fasi successive (vedi `PIANO.md`).
+> 6 stem, rilevamento dell'hardware con profili, gestione dello spazio su disco e testi
+> sincronizzati parola per parola con editor. Il player completo arriva nella fase 6 (vedi `PIANO.md`).
 >
 > I test automatici sono rimandati: verranno scritti ed eseguiti sul PC di test con GPU
-> NVIDIA. Il codice delle fasi 2-4 è stato controllato solo staticamente (mypy, ruff, tsc):
-> nessun brano è ancora stato importato, analizzato o separato.
+> NVIDIA. Il codice delle fasi 2-5 è stato controllato solo staticamente (mypy, ruff, tsc):
+> nessun brano è ancora stato importato, analizzato, separato o trascritto.
 
 ## Prerequisiti
 
@@ -110,6 +110,28 @@ personale**. Dopo la separazione gli accordi vengono ricalcolati sul mix senza v
 - I modelli si scaricano solo su richiesta, mostrando prima la dimensione. Se la separazione
   automatica è attiva e il modello è già scaricato, dopo l'import parte da sola.
 
+## Testi sincronizzati
+
+Dopo l'analisi (se non hai già modificato il testo):
+
+1. **Ricerca** su LRCLIB (facoltativa, `LOCALCHORDS_LRCLIB_ENABLED`): si inviano solo titolo,
+   artista, album e durata.
+2. **Trascrizione** della voce con Whisper (faster-whisper), sullo stem della voce se esiste,
+   altrimenti sul mix. Modello per profilo: small (464 MB, CPU), medium (1,46 GB),
+   large-v3-turbo (1,55 GB, GPU). Si scarica solo su richiesta.
+3. **Allineamento** parola per parola del testo trovato alle parole trascritte. Senza testo
+   la trascrizione diventa il testo; senza modello Whisper restano i tempi per riga di LRCLIB.
+
+Nella scheda del brano:
+- **Karaoke**: riga e parola corrente evidenziate, accordi sopra le parole, scorrimento
+  automatico, clic su una parola per ascoltare da lì.
+- **Modifica**: testo e tempi di ogni riga e di ogni parola, "⏱" per impostare l'inizio alla
+  posizione di ascolto, aggiungi ed elimina righe e parole, ripristina l'originale.
+- **Annulla / Ripristina** (anche Ctrl+Z / Ctrl+Y): la cronologia è salvata nel database e
+  sopravvive al riavvio. Ogni modifica si salva subito.
+- **Incolla il testo** (anche in formato LRC) per sostituire quello trovato, poi allineamento.
+- Brani strumentali e voce assente vengono segnalati.
+
 ## Spazio su disco
 
 In **Impostazioni → Spazio su disco**: occupazione di audio, stem, waveform, modelli, cache,
@@ -172,6 +194,8 @@ app\importing\  upload con anteprima, catalogo, job di importazione, validazione
 app\analysis\   beat, accordi, tonalità, sezioni, waveform e job di analisi
 app\separation\ modelli, separazione in un processo figlio, job di download e separazione
 app\hardware.py rilevamento di GPU e runtime, profili
+app\lyrics\     LRCLIB, Whisper in un processo figlio, allineamento, editor, job dei testi
+app\editing\    cronologia persistente delle modifiche (annulla/ripristina)
 app\media\      wrapper di ffprobe e ffmpeg
 app\storage\    struttura della cartella data\
 app\adapters\   adapter YouTube (yt-dlp), facoltativo
@@ -221,6 +245,14 @@ frontend\       Vite + React + TypeScript + Tailwind, compilato in statico e ser
 | POST / DELETE | `/api/models/{id}` (`/download`) | scarica o elimina un modello |
 | GET | `/api/system/storage` | occupazione su disco |
 | POST | `/api/system/storage/cleanup` | svuota cache, caricamenti o esportazioni |
+| GET | `/api/songs/{id}/lyrics` | righe e parole con tempi, stato, fonte, modello Whisper |
+| PATCH / DELETE | `/api/songs/{id}/lyrics/{lineId}` | modifica (testo, inizio, fine) o elimina una riga |
+| POST | `/api/songs/{id}/lyrics/lines` | aggiunge una riga |
+| PATCH / DELETE | `/api/songs/{id}/lyrics/words/{wordId}` | modifica o elimina una parola |
+| POST | `/api/songs/{id}/lyrics/{lineId}/words` | aggiunge una parola |
+| POST | `/api/songs/{id}/lyrics/{lineId}/restore`, `/lyrics/restore` | ripristina l'originale (riga o tutto) |
+| POST | `/api/songs/{id}/lyrics/refresh` | nuova ricerca o testo incollato (`text`, `search`) |
+| POST | `/api/songs/{id}/undo`, `/redo` | annulla / ripristina l'ultima modifica |
 
 Le anteprime di upload non confermate vengono eliminate dopo 24 ore.
 
